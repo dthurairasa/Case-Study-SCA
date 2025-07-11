@@ -81,22 +81,22 @@ shinyUI(fluidPage(
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "IFR.png", height = "60px")),
             div(class = "kpi-number", "93,4%"),
-            div(class = "kpi-name", "IFR")
+            div(class = "kpi-name", "Item Fill Rate")
         ),
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "OTD.png", height = "60px")),
             div(class = "kpi-number", "85,8%"),
-            div(class = "kpi-name", "OTD")
+            div(class = "kpi-name", "On Time Delivery Rate")
         ),
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "LTD.png", height = "60px")),
             div(class = "kpi-number", "1,3d"),
-            div(class = "kpi-name", "LTD")
+            div(class = "kpi-name", "Lead Time")
         ),
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "OCT.png", height = "60px")),
             div(class = "kpi-number", "145d"),
-            div(class = "kpi-name", "OCT")
+            div(class = "kpi-name", "Order Cycle Time")
         )
     )
 ))

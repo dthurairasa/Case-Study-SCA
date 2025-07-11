@@ -42,9 +42,9 @@ orders <- EKPO %>%
   rename(Lieferdatum = EINDT) %>%
   mutate(
     # falls Lieferdatum als Zahl/Text gespeichert, in Date umwandeln
-    Lieferdatum = as.Date(Lieferdatum),
+    Lieferdatum   = as.Date(Lieferdatum,  format = "%d.%m.%Y"),
     # hier musst du ggf. deine Durchlaufzeit-Spalte anpassen
-    Durchlaufzeit = as.numeric(Durchlaufzeit)
+    Durchlaufzeit = as.Date(Durchlaufzeit,  format = "%d.%m.%Y")
   )
 
 # 3) Shiny-Server-Logik
