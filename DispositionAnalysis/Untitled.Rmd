@@ -1,0 +1,166 @@
+---
+title: "case study helpbook"
+author: "Anton Badrak"
+date: "2025-07-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+```
+
+```{r calculate-ifr, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(tidyr)
+# Die vier relevanten Procurement-Tabellen
+EKPO <- read_excel("data/Procurement/EKPO.xlsx", guess_max=10000)
+EKKO <- read_excel("data/Procurement/EKKO.xlsx", guess_max=10000)
+EKET <- read_excel("data/Procurement/EKET.xlsx", guess_max=10000)
+EKBE <- read_excel("data/Procurement/EKBE.xlsx", guess_max=10000)
+
+# Debug: Dimensionen & Spalten
+cat("EKPO: ", dim(EKPO), "\n"); print(names(EKPO))
+cat("EKKO: ", dim(EKKO), "\n"); print(names(EKKO))
+cat("EKET: ", dim(EKET), "\n"); print(names(EKET))
+cat("EKBE: ", dim(EKBE), "\n"); print(names(EKBE))
+
+```
+```{r}
+## ------------------------------------------------------------------
+## 0) Helfer
+## ------------------------------------------------------------------
+parse_number <- function(x) {
+  as.numeric(gsub(",", ".", gsub("\\.", "", x)))
+}
+
+## ------------------------------------------------------------------
+## 1) Planmenge  (EKET)
+## ------------------------------------------------------------------
+planned <- EKET %>%                              # immer EKET nutzen!
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    planned_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups      = "drop"
+  )
+
+## ------------------------------------------------------------------
+## 2) Netto-Liefermenge  (101 – 102)
+## ------------------------------------------------------------------
+delivered <- EKBE %>%
+  filter(BWART %in% c("101", "102")) %>%         # echte GR + Storno
+  mutate(
+    sign = case_when(
+      BWART == "101" & SHKZG == "S" ~  1,        # 101(S)
+      BWART == "102" & SHKZG == "H" ~ -1,        # 102(H)
+      TRUE                          ~  0
+    )
+  ) %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    delivered_qty = sum(sign * parse_number(MENGE), na.rm = TRUE),
+    .groups        = "drop"
+  )
+
+## ------------------------------------------------------------------
+## 3) IFR pro Position  (immer 0–100 %)
+## ------------------------------------------------------------------
+ifr_pos <- planned %>%
+  left_join(delivered, by = c("EBELN", "EBELP")) %>%
+  mutate(
+    delivered_qty = coalesce(delivered_qty, 0),
+    fill_qty      = pmax(pmin(delivered_qty, planned_qty), 0),
+    ifr_pos       = fill_qty / planned_qty * 100
+  )
+
+## ------------------------------------------------------------------
+## 4) IFR pro Material  (optional)
+## ------------------------------------------------------------------
+pos_mat <- EKPO %>%
+  group_by(EBELN, EBELP) %>% slice(1) %>% ungroup() %>%
+  select(EBELN, EBELP, MATNR)
+
+ifr_material <- ifr_pos %>%
+  left_join(pos_mat, by = c("EBELN", "EBELP"), relationship = "many-to-one") %>%
+  group_by(MATNR) %>%
+  summarise(
+    total_planned   = sum(planned_qty,   na.rm = TRUE),
+    total_delivered = sum(fill_qty,      na.rm = TRUE),   # schon gedeckelt
+    ifr_raw         = total_delivered / total_planned * 100,
+    .groups = "drop"
+  )
+
+## ------------------------------------------------------------------
+## 5) Ausgabe & Plot
+## ------------------------------------------------------------------
+knitr::kable(
+  head(ifr_material %>% arrange(desc(ifr_raw)), 20),
+  col.names = c("MATNR", "Bestellt", "Geliefert", "IFR raw (%)"),
+  digits = 2
+)
+
+hist(
+  ifr_material$ifr_raw,
+  breaks = seq(0, 100, 5),
+  main   = "Verteilung der Item-Fill-Rate pro Material",
+  xlab   = "IFR (%)"
+)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
