@@ -28,6 +28,15 @@ AFPO  <- read_excel("data/Production/AFPO.xlsx", guess_max = 10000)
 AFVC  <- read_excel("data/Production/AFVC.xlsx", guess_max = 10000)
 AFVV  <- read_excel("data/Production/AFVV.xlsx", guess_max = 10000)
 
+plant <- EKPO %>% select(EBELN, EBELP,
+                         WERKS = dplyr::any_of("WERKS"))   # wird NA, wenn Spalte fehlt
+
+if (all(is.na(plant$WERKS))) {                             # Fallback über EBAN
+  plant <- EBAN %>%
+    select(EBELN, EBELP, WERKS = RESWK)
+}
+
+
 ## 1) EKKO einmalig auf Kopf‐Ebene reduzieren
 ekko_head <- EKKO %>%
   distinct(EBELN, .keep_all = TRUE) %>%      # nur 1 Zeile je EBELN!
@@ -50,7 +59,5 @@ orders <- EKPO %>%
   ) %>% 
   select(EBELN, EBELP, MATNR, WERKS, Erstelldatum, Lieferdatum, Durchlaufzeit)
 
-lapply(
-  list.files("kpi", "^calculate_.*\\.[Rr]$", full.names = TRUE),  #  <<––  .R **oder** .r
-  source
-)
+## 3) alle KPI-Funktionsdateien sourcen
+lapply(list.files("kpi", "^calculate_.*\\.R$", full.names = TRUE), source)
