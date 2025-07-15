@@ -70,21 +70,19 @@ shinyUI(fluidPage(
     "))
   ),
   
-  ## ----------------------------------------------------------
-  ## 1) Kopf-Leiste (Werk/Material/Zeitraum auswählen)
-  ## ----------------------------------------------------------
-  div(class = "top-bar",
-      div(class = "info-box",
-          selectInput("werk",     "Werk:",     choices = NULL, width = "150px"),
-          selectInput("material", "Material:", choices = NULL, width = "180px"),
-          dateRangeInput("zeitraum", "Zeitraum:",
-                         start = Sys.Date() - 90, end = Sys.Date(),
-                         format = "dd.mm.yyyy", width = "310px")
-      ),
-      actionButton("close_app", "Close", class = "close-button")
+  # Top Bar
+  div(
+    style = "display: flex; justify-content: space-between; align-items: center;",
+    # Left side: Material and Data
+    div(
+      style = "display: flex; gap: 100px; align-items: center;",
+      selectInput("material", "Material:", choices = NULL, width = "180px"),
+      span(HTML("Data Used:<br>from 01.01.2023 to 31.05.2025</b>")),
+      span(HTML("Datasets Used:<br>*Number*</b>"))
+    ),
+    # Right side: Close button
+    actionButton("close_app", "Close", class = "close-button")
   ),
-  
-  
   
   # KPI Cards Display (static placeholders for now)
   div(class = "kpi-container",
@@ -99,26 +97,16 @@ shinyUI(fluidPage(
           div(class = "kpi-name",   "On-Time Delivery Rate")
       ),
       div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_lead")),
-          div(class = "kpi-name",   "Lead Time")
-      ),
-      div(class = "kpi-card",
           div(class = "kpi-logo", img(src = "OCT.png", height = 60)),
           div(class = "kpi-number", textOutput("kpi_poct")),
           div(class = "kpi-name",   "Order Cycle Time")
+      ),
+      div(class = "kpi-card",
+          div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
+          div(class = "kpi-number", textOutput("kpi_lead")),
+          div(class = "kpi-name",   "Lead Time")
       )
   ),
   
-  ## ----------------------------------------------------------
-  ## 3) Plot & Tabelle + Download
-  ## ----------------------------------------------------------
-  fluidRow(
-    column(6, plotOutput("durchlaufPlot", height = "350px")),
-    column(6,
-           downloadButton("downloadData", "Daten exportieren",
-                          class = "btn btn-primary"),
-           br(), br(),
-           DT::dataTableOutput("dtTable"))
-  )
 ))
+
