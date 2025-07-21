@@ -63,13 +63,6 @@ EBAN <- EBAN %>%
   select(EBELN, EBELP, MATNR, ERDAT, RESWK)
 
 
-plant <- EKPO %>% select(EBELN, EBELP,
-                         WERKS = dplyr::any_of("WERKS"))   # wird NA, wenn Spalte fehlt
-
-if (all(is.na(plant$WERKS))) {                             # Fallback über EBAN
-  plant <- EBAN %>%
-    select(EBELN, EBELP, WERKS = RESWK)
-}
 
 
 ## 1) EKKO einmalig auf Kopf‐Ebene reduzieren
@@ -86,13 +79,12 @@ eket_head <- EKET %>%
 master <- EKPO %>%
   left_join(ekko_head, by = "EBELN") %>%         # hat jetzt AEDAT_EKKO
   left_join(eket_head, by = c("EBELN", "EBELP")) %>%
-  left_join(plant,     by = c("EBELN", "EBELP")) %>%
   mutate(
     Erstelldatum  = AEDAT_EKKO,
     Lieferdatum   = EINDT,
     Durchlaufzeit = as.numeric(Lieferdatum - Erstelldatum)
-  ) %>% 
-  select(EBELN, EBELP, MATNR, WERKS, Erstelldatum, Lieferdatum, Durchlaufzeit)
+  ) %>%
+  select(EBELN, EBELP, MATNR, Erstelldatum, Lieferdatum, Durchlaufzeit)
 
 # für die Shiny-App weiterhin unter dem Namen 'orders'
 orders <- master

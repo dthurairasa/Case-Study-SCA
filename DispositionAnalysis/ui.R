@@ -77,8 +77,14 @@ shinyUI(fluidPage(
     div(
       style = "display: flex; gap: 100px; align-items: center;",
       selectInput("material", "Material:", choices = NULL, width = "180px"),
-      span(HTML("Data Used:<br>from 01.01.2023 to 31.05.2025</b>")),
-      span(HTML("Datasets Used:<br>*Number*</b>"))
+      span(
+        HTML("Data Used:<br>"),
+        textOutput("data_range", inline = TRUE)
+      ),
+      span(
+        HTML("Datasets Used:<br>"),
+        textOutput("data_count", inline = TRUE)
+      )
     ),
     # Right side: Close button
     actionButton("close_app", "Close", class = "close-button")

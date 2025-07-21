@@ -12,19 +12,9 @@ library(writexl)   # für Excel-Export
 shinyServer(function(input, output, session) {
   
   ## ------------------------------------------
-  ## 0) Hilfs-Reaktivitäten (Werk & Material)
+  ## 0) Hilfs-Reaktivität (Material)
   ## ------------------------------------------
-  # Drop-down „Werk“ füllen, sobald orders da ist
-  observe({
-    req(orders)
-    werke <- sort(unique(orders$WERKS))
-    
-    updateSelectInput(session, "werk",
-                      choices  = werke,
-                      selected = first(werke))
-  })
-  
-  # Material-Liste für zweites Drop-down (falls noch nicht im UI)
+  # Material-Liste für Drop-down füllen
   observe({
     req(orders)
     mats <- sort(unique(orders$MATNR))
@@ -34,30 +24,48 @@ shinyServer(function(input, output, session) {
   })
   
   ## ------------------------------------------
-  ## 1) Daten nach Werk & Zeitraum filtern
+  ## 1) Daten nach Material filtern
   ## ------------------------------------------
   df_filtered <- reactive({
-    req(input$werk, input$zeitraum)
+    req(input$material)
     orders %>%
-      filter(
-        WERKS        == input$werk,
-        Lieferdatum >= input$zeitraum[1],
-        Lieferdatum <= input$zeitraum[2]
-      )
+      filter(MATNR == input$material) %>%
+      arrange(desc(Lieferdatum))
   })
+  
+  ## Datensatz pro Material auf die neuesten 25 Einträge begrenzen
+  df_last25 <- reactive({
+    req(input$material)
+    df_filtered() %>%
+      slice_head(n = 25)
+  })
+  
+  ## Kennzahlen für Anzeige "Data Used" und "Datasets Used"
+  output$data_range <- renderText({
+    df <- df_last25()
+    if (nrow(df) == 0) return("-")
+    paste0(
+      "from ", format(min(df$Lieferdatum), "%d.%m.%Y"),
+      " to ", format(max(df$Lieferdatum), "%d.%m.%Y")
+    )
+  })
+  
+  output$data_count <- renderText({
+    nrow(df_last25())
+  })  
   
   ## ------------------------------------------
   ## 2) KPI-Berechnung (pro Material)
   ## ------------------------------------------
   kpi_vals <- reactive({
     req(input$material)
+    po_keys <- df_last25() %>% select(EBELN, EBELP)
     
     list(
-      # Reihenfolge der Argumente anpassen!
-      ifr   = calculate_ifr (input$material, EKET, EKBE, EKPO),     # %-Wert 0-100
-      otdr  = calculate_otdr(input$material, EKET, EKES, EKPO),     # Rate   0-1
-      poct  = calculate_poct(input$material, EKPO, EKKO, EKBE),     # Tage
-      ltime = calculate_lead_time(input$material, EBAN, EKKO)       # Tage
+      ifr   = calculate_ifr (input$material, EKET, EKBE, EKPO, po_filter = po_keys),
+      otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
+      poct  = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
+      ltime = calculate_lead_time(input$material, EBAN, EKKO,       po_filter = po_keys)
     )
   })
   
