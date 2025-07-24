@@ -72,41 +72,67 @@ shinyUI(fluidPage(
   
   # Top Bar
   div(
-    style = "display: flex; justify-content: space-between; align-items: center;",
-    # Left side: Material and Data
+    style = "padding-top: 20px;",  # Adjust the value as needed
     div(
-      style = "display: flex; gap: 100px; align-items: center;",
-      selectInput("material", "Material:", choices = NULL, width = "180px"),
-      span(HTML("Data Used:<br>from 01.01.2023 to 31.05.2025</b>")),
-      span(HTML("Datasets Used:<br>*Number*</b>"))
-    ),
-    # Right side: Close button
-    actionButton("close_app", "Close", class = "close-button")
+      style = "display: flex; justify-content: space-between; align-items: center;",
+      div(
+        style = "display: flex; gap: 100px; align-items: center;",
+        selectInput("material", "Material:", choices = NULL, width = "180px"),
+        span(HTML("Data Used:<br>from *minDate* to *maxDate*</b>")),
+        span(HTML("Datasets Used:<br>*25_or_lowerNumber*</b>"))
+      ),
+      actionButton("close_app", "Close", class = "close-button")
+    )
   ),
+  
+  tags$hr(style = "margin: 0; border-top: 1px solid #ddd;"),
   
   # KPI Cards Display (static placeholders for now)
   div(class = "kpi-container",
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "IFR.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_ifr")),
-          div(class = "kpi-name",   "Item Fill Rate")
+      style = "margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; display: flex; gap: 10px;",
+      
+      # Single button for IFR
+      actionButton("kpi_ifr", label = div(
+        class = "kpi-card",
+        div(class = "kpi-logo", img(src = "IFR.png", height = 60)),
+        div(class = "kpi-number", textOutput("kpi_ifr")),
+        div(class = "kpi-name", "Item Fill Rate")
       ),
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "OTD.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_otdr")),
-          div(class = "kpi-name",   "On-Time Delivery Rate")
+      style = "background: none; border: none; padding: 0; width: auto; text-align: left;"
       ),
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "OCT.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_poct")),
-          div(class = "kpi-name",   "Order Cycle Time")
+      
+      div(style = "width: 1px; background-color: #ddd; height: auto;"),
+      
+      # One button wrapping the last three KPIs
+      actionButton("kpi_time", label = div(
+        style = "display: flex; gap: 10px;",  # adjust spacing between cards
+        div(class = "kpi-card",
+            div(class = "kpi-logo", img(src = "OTD.png", height = 60)),
+            div(class = "kpi-number", textOutput("kpi_otdr")),
+            div(class = "kpi-name", "On-Time Delivery Rate")
+        ),
+        div(class = "kpi-card",
+            div(class = "kpi-logo", img(src = "OCT.png", height = 60)),
+            div(class = "kpi-number", textOutput("kpi_poct")),
+            div(class = "kpi-name", "Order Cycle Time")
+        ),
+        div(class = "kpi-card",
+            div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
+            div(class = "kpi-number", textOutput("kpi_lead")),
+            div(class = "kpi-name", "Mean Delay")
+        )
       ),
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_lead")),
-          div(class = "kpi-name",   "Lead Time")
+      style = "background: none; border: none; padding: 0; width: auto; text-align: left; display: flex;"
       )
   ),
+  
+  
+  div(id = "info-container",
+      style = "margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;",
+      uiOutput("kpi_info")
+  )
+  
+  
   
 ))
 
