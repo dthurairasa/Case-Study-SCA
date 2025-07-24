@@ -63,13 +63,6 @@ EBAN <- EBAN %>%
   select(EBELN, EBELP, MATNR, ERDAT, RESWK)
 
 
-plant <- EKPO %>% select(EBELN, EBELP,
-                         WERKS = dplyr::any_of("WERKS"))   # wird NA, wenn Spalte fehlt
-
-if (all(is.na(plant$WERKS))) {                             # Fallback über EBAN
-  plant <- EBAN %>%
-    select(EBELN, EBELP, WERKS = RESWK)
-}
 
 
 ## 1) EKKO einmalig auf Kopf‐Ebene reduzieren
@@ -82,17 +75,51 @@ eket_head <- EKET %>%
   distinct(EBELN, EBELP, .keep_all = TRUE) %>%   # erster Schedule-Line
   select(EBELN, EBELP, EINDT)
 
+## 2a) Planmenge je Position (Summe aller Schedule-Lines)
+planned_qty_df <- EKET %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    planned_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups      = "drop"
+  )
+
+## 2b) Goods Receipt Qty (101 S)
+gr_qty_df <- EKBE %>%
+  filter(BWART == "101", SHKZG == "S") %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    goods_receipt_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups           = "drop"
+  )
+
+## 2c) Return / Storno Qty (102 H)
+return_qty_df <- EKBE %>%
+  filter(BWART == "102", SHKZG == "H") %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    return_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups    = "drop"
+  )
+
 ## 3) Master-Tabelle aufbauen
 master <- EKPO %>%
   left_join(ekko_head, by = "EBELN") %>%         # hat jetzt AEDAT_EKKO
   left_join(eket_head, by = c("EBELN", "EBELP")) %>%
-  left_join(plant,     by = c("EBELN", "EBELP")) %>%
+  left_join(planned_qty_df, by = c("EBELN", "EBELP")) %>%
+  left_join(gr_qty_df,      by = c("EBELN", "EBELP")) %>%
+  left_join(return_qty_df,  by = c("EBELN", "EBELP")) %>%
   mutate(
     Erstelldatum  = AEDAT_EKKO,
     Lieferdatum   = EINDT,
-    Durchlaufzeit = as.numeric(Lieferdatum - Erstelldatum)
-  ) %>% 
-  select(EBELN, EBELP, MATNR, WERKS, Erstelldatum, Lieferdatum, Durchlaufzeit)
+    Durchlaufzeit = as.numeric(Lieferdatum - Erstelldatum),
+    planned_qty       = coalesce(planned_qty, 0),
+    goods_receipt_qty = coalesce(goods_receipt_qty, 0),
+    return_qty        = coalesce(return_qty, 0)
+  ) %>%
+  select(
+    EBELN, EBELP, MATNR, Erstelldatum, Lieferdatum, Durchlaufzeit,
+    planned_qty, goods_receipt_qty, return_qty
+  )
 
 # für die Shiny-App weiterhin unter dem Namen 'orders'
 orders <- master
