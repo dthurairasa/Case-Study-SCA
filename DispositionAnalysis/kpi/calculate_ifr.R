@@ -13,11 +13,15 @@
 calculate_ifr <- function(material_id,
                           EKET,
                           EKBE,
-                          EKPO) {
+                          EKPO,
+                          po_filter = NULL) {
   ## 0) Alle PO-Positionen für das Material ermitteln -----------------
   pos_keys <- EKPO %>%
     filter(MATNR == as.character(material_id)) %>%
     select(EBELN, EBELP)
+  if (!is.null(po_filter)) {
+    pos_keys <- semi_join(pos_keys, po_filter, by = c("EBELN", "EBELP"))
+  }
   if (nrow(pos_keys) == 0)
     stop("Keine Bestellpositionen für Material ", material_id)
   
