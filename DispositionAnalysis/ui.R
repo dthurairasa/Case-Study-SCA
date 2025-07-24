@@ -84,7 +84,8 @@ shinyUI(fluidPage(
       span(
         HTML("Datasets Used:<br>"),
         textOutput("data_count", inline = TRUE)
-      )
+      ),
+      uiOutput("all_data_checkbox")
     ),
     # Right side: Close button
     actionButton("close_app", "Close", class = "close-button")

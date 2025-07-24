@@ -40,9 +40,25 @@ shinyServer(function(input, output, session) {
       slice_head(n = 25)
   })
   
+  ## Daten für KPI abhängig von Checkbox
+  df_used <- reactive({
+    if (!is.null(input$use_all) && input$use_all) {
+      df_filtered()
+    } else {
+      df_last25()
+    }
+  })
+  
+  ## Checkbox anzeigen, wenn mehr als 25 Datensätze vorhanden sind
+  output$all_data_checkbox <- renderUI({
+    if (nrow(df_filtered()) > 25) {
+      checkboxInput("use_all", "Use all data", value = FALSE)
+    }
+  })
+  
   ## Kennzahlen für Anzeige "Data Used" und "Datasets Used"
   output$data_range <- renderText({
-    df <- df_last25()
+    df <- df_used()
     if (nrow(df) == 0) return("-")
     paste0(
       "from ", format(min(df$Lieferdatum), "%d.%m.%Y"),
@@ -51,7 +67,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$data_count <- renderText({
-    nrow(df_last25())
+    nrow(df_used())
   })  
   
   ## ------------------------------------------
@@ -59,7 +75,7 @@ shinyServer(function(input, output, session) {
   ## ------------------------------------------
   kpi_vals <- reactive({
     req(input$material)
-    po_keys <- df_last25() %>% select(EBELN, EBELP)
+    po_keys <- df_used() %>% select(EBELN, EBELP)
     
     list(
       ifr   = calculate_ifr (input$material, EKET, EKBE, EKPO, po_filter = po_keys),
