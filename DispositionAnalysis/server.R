@@ -90,6 +90,26 @@ shinyServer(function(input, output, session) {
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
   output$kpi_poct  <- renderText( sprintf("%.1f d",  kpi_vals()$poct) )
   output$kpi_lead  <- renderText( sprintf("%.1f d",  kpi_vals()$ltime) )
+  ## ------------------------------------------
+  ## 3) Extra-Information
+  ## ------------------------------------------
+  selected_kpi <- reactiveVal(NULL)
+  
+  observeEvent(input$kpi_ifr, {
+    selected_kpi("Item Information")
+  })
+  observeEvent(input$kpi_time, {
+    selected_kpi("Time Information")
+  })
+  
+  output$kpi_info <- renderUI({
+    text <- if (is.null(selected_kpi())) {
+      "Please select the field you are interested in"
+    } else {
+      selected_kpi()
+    }
+    tags$div(style = "text-align: center;", text)
+  })
   
   ## ------------------------------------------
   ## 3) Histogramm der Durchlaufzeiten
