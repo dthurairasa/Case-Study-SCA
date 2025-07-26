@@ -90,25 +90,58 @@ shinyServer(function(input, output, session) {
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
   output$kpi_poct  <- renderText( sprintf("%.1f d",  kpi_vals()$poct) )
   output$kpi_lead  <- renderText( sprintf("%.1f d",  kpi_vals()$ltime) )
+  
+  get_color_info <- function(value, avg) {
+    if (is.na(avg)) {
+      list(color = kpi_colors$grey,
+           desc  = "no average available")
+    } else if (value < avg * 0.90) {
+      list(color = kpi_colors$red,
+           desc  = ">10% below average")
+    } else if (value < avg * 0.95) {
+      list(color = kpi_colors$yellow,
+           desc  = "5-10% below average")
+    } else if (value <= avg * 1.05) {
+      list(color = kpi_colors$blue,
+           desc  = "within \u00B15% of average")
+    } else {
+      list(color = kpi_colors$green,
+           desc  = ">5% above average")
+    }
+  }
   ## ------------------------------------------
   ## 3) Extra-Information
   ## ------------------------------------------
-  selected_kpi <- reactiveVal(NULL)
+  selected_kpi   <- reactiveVal(NULL)
+  selected_rule  <- reactiveVal(NULL)
   
   observeEvent(input$kpi_ifr, {
+    info  <- get_color_info(kpi_vals()$ifr, avg_ifr)
     selected_kpi("Item Information")
+    selected_rule(info$desc)
+    session$sendCustomMessage("update-bar-color", info$color)
   })
   observeEvent(input$kpi_time, {
+    value <- kpi_vals()$otdr * 100
+    info  <- get_color_info(value, avg_otd)
     selected_kpi("Time Information")
+    selected_rule(info$desc)
+    session$sendCustomMessage("update-bar-color", info$color)
   })
   
   output$kpi_info <- renderUI({
-    text <- if (is.null(selected_kpi())) {
-      "Please select the field you are interested in"
-    } else {
-      selected_kpi()
+    kpi  <- selected_kpi()
+    desc <- selected_rule()
+    if (is.null(kpi)) {
+      kpi  <- "Please select the field you are interested in"
+      desc <- ""
     }
-    tags$div(style = "text-align: center;", text)
+    div(
+      style = "display:flex; width:100%;",
+      div(style = "flex:1;"),
+      div(kpi,  style = "flex:1; text-align:center;"),
+      div(desc, style = "flex:1; text-align:right; font-size:0.9em; font-style:italic;")
+    )
   })
   
   ## ------------------------------------------

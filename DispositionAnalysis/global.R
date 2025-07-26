@@ -124,5 +124,41 @@ master <- EKPO %>%
 # für die Shiny-App weiterhin unter dem Namen 'orders'
 orders <- master
 
+## Farbdefinitionen fuer KPI-Balken
+kpi_colors <- list(
+  red    = "#e74c3c",
+  yellow = "#f1c40f",
+  blue   = "#3498db",
+  green  = "#2ecc71",
+  grey   = "#cccccc"
+)
+
+## Durchschnittswerte fuer IFR und OTD
+avg_ifr <- with(orders, {
+  fill_qty <- pmax(pmin(goods_receipt_qty - return_qty, planned_qty), 0)
+  if (sum(planned_qty, na.rm = TRUE) > 0) {
+    sum(fill_qty, na.rm = TRUE) / sum(planned_qty, na.rm = TRUE) * 100
+  } else {
+    NA_real_
+  }
+})
+
+avg_otd <- {
+  ekes_df <- EKES %>% rename(ETENR = ETENS)
+  merged <- EKET %>%
+    inner_join(EKPO %>% select(EBELN, EBELP), by = c("EBELN", "EBELP")) %>%
+    inner_join(ekes_df %>% select(EBELN, EBELP, ETENR, EINDT),
+               by = c("EBELN", "EBELP", "ETENR")) %>%
+    mutate(
+      plannedDate   = as.Date(EINDT.x, format = "%d.%m.%Y"),
+      confirmedDate = as.Date(EINDT.y, format = "%d.%m.%Y")
+    )
+  if (nrow(merged) > 0) {
+    mean(merged$confirmedDate <= merged$plannedDate, na.rm = TRUE) * 100
+  } else {
+    NA_real_
+  }
+}
+
 ## 3) alle KPI-Funktionsdateien sourcen
 lapply(list.files("kpi", "^calculate_.*\\.R$", full.names = TRUE), source)
