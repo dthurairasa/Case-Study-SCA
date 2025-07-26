@@ -9,10 +9,7 @@ parse_number <- function(x) {
 }
 
 # 1) Alle Excel-Files einmalig einlesen (guess_max dämpft Typ-Warnings)
-bom   <- read_excel("data/bom.xlsx",    guess_max = 10000)
-MARA  <- read_excel("data/MARA.xlsx",   guess_max = 10000)
 MARC  <- read_excel("data/MARC.xlsx",   guess_max = 10000)
-MVER  <- read_excel("data/MVER.xlsx",   guess_max = 10000)
 
 # Procurement
 EBAN  <- read_excel("data/Procurement/EBAN.xlsx", guess_max = 10000)
@@ -22,19 +19,50 @@ EKET  <- read_excel("data/Procurement/EKET.xlsx", guess_max = 10000)
 EKKO  <- read_excel("data/Procurement/EKKO.xlsx", guess_max = 10000)
 EKPO  <- read_excel("data/Procurement/EKPO.xlsx", guess_max = 10000)
 
-# Production
-AFKO  <- read_excel("data/Production/AFKO.xlsx", guess_max = 10000)
-AFPO  <- read_excel("data/Production/AFPO.xlsx", guess_max = 10000)
-AFVC  <- read_excel("data/Production/AFVC.xlsx", guess_max = 10000)
-AFVV  <- read_excel("data/Production/AFVV.xlsx", guess_max = 10000)
+# nur Materialien mit Fremdbezug
+materials_ext <- MARC %>%
+  filter(BESKZ == "F") %>%
+  select(MATNR)
 
-plant <- EKPO %>% select(EBELN, EBELP,
-                         WERKS = dplyr::any_of("WERKS"))   # wird NA, wenn Spalte fehlt
+# Datumsfilter ab 2023
+EKKO <- EKKO %>%
+  mutate(AEDAT = as.Date(AEDAT, format = "%d.%m.%Y")) %>%
+  filter(AEDAT >= as.Date("2023-01-01")) %>%
+  select(EBELN, AEDAT)
 
-if (all(is.na(plant$WERKS))) {                             # Fallback über EBAN
-  plant <- EBAN %>%
-    select(EBELN, EBELP, WERKS = RESWK)
-}
+EKPO <- EKPO %>%
+  filter(MATNR %in% materials_ext$MATNR) %>%
+  semi_join(EKKO, by = "EBELN")
+
+EKET <- EKET %>%
+  # EKET hat kein MATNR, daher über Positionen filtern
+  inner_join(EKPO %>% select(EBELN, EBELP), by = c("EBELN", "EBELP")) %>%
+  mutate(EINDT = as.Date(EINDT, format = "%d.%m.%Y")) %>%
+  filter(EINDT >= as.Date("2023-01-01")) %>%
+  select(EBELN, EBELP, ETENR, EINDT, MENGE)
+
+EKBE <- EKBE %>%
+  filter(MATNR %in% materials_ext$MATNR) %>%
+  semi_join(EKKO, by = "EBELN") %>%
+  mutate(BUDAT = as.Date(BUDAT, format = "%d.%m.%Y")) %>%
+  filter(BUDAT >= as.Date("2023-01-01")) %>%
+  select(EBELN, EBELP, MATNR, MENGE, BWART, SHKZG, BUDAT, VGABE)
+
+EKES <- EKES %>%
+  # EKES hat kein MATNR, daher über Positionen filtern
+  inner_join(EKPO %>% select(EBELN, EBELP), by = c("EBELN", "EBELP")) %>%
+  mutate(EINDT = as.Date(EINDT, format = "%d.%m.%Y")) %>%
+  filter(EINDT >= as.Date("2023-01-01")) %>%
+  select(EBELN, EBELP, ETENS, EINDT)
+
+EBAN <- EBAN %>%
+  filter(MATNR %in% materials_ext$MATNR) %>%
+  semi_join(EKKO, by = "EBELN") %>%
+  mutate(ERDAT = as.Date(ERDAT, format = "%d.%m.%Y")) %>%
+  filter(ERDAT >= as.Date("2023-01-01")) %>%
+  select(EBELN, EBELP, MATNR, ERDAT, RESWK)
+
+
 
 
 ## 1) EKKO einmalig auf Kopf‐Ebene reduzieren
@@ -47,17 +75,90 @@ eket_head <- EKET %>%
   distinct(EBELN, EBELP, .keep_all = TRUE) %>%   # erster Schedule-Line
   select(EBELN, EBELP, EINDT)
 
-## 3) orders aufbauen
-orders <- EKPO %>%
+## 2a) Planmenge je Position (Summe aller Schedule-Lines)
+planned_qty_df <- EKET %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    planned_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups      = "drop"
+  )
+
+## 2b) Goods Receipt Qty (101 S)
+gr_qty_df <- EKBE %>%
+  filter(BWART == "101", SHKZG == "S") %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    goods_receipt_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups           = "drop"
+  )
+
+## 2c) Return / Storno Qty (102 H)
+return_qty_df <- EKBE %>%
+  filter(BWART == "102", SHKZG == "H") %>%
+  group_by(EBELN, EBELP) %>%
+  summarise(
+    return_qty = sum(parse_number(MENGE), na.rm = TRUE),
+    .groups    = "drop"
+  )
+
+## 3) Master-Tabelle aufbauen
+master <- EKPO %>%
   left_join(ekko_head, by = "EBELN") %>%         # hat jetzt AEDAT_EKKO
-  left_join(eket_head, by = c("EBELN", "EBELP")) %>% 
-  left_join(plant,     by = c("EBELN", "EBELP")) %>% 
+  left_join(eket_head, by = c("EBELN", "EBELP")) %>%
+  left_join(planned_qty_df, by = c("EBELN", "EBELP")) %>%
+  left_join(gr_qty_df,      by = c("EBELN", "EBELP")) %>%
+  left_join(return_qty_df,  by = c("EBELN", "EBELP")) %>%
   mutate(
-    Erstelldatum  = as.Date(AEDAT_EKKO, format = "%d.%m.%Y"),
-    Lieferdatum   = as.Date(EINDT,      format = "%d.%m.%Y"),
-    Durchlaufzeit = as.numeric(Lieferdatum - Erstelldatum)
-  ) %>% 
-  select(EBELN, EBELP, MATNR, WERKS, Erstelldatum, Lieferdatum, Durchlaufzeit)
+    Erstelldatum  = AEDAT_EKKO,
+    Lieferdatum   = EINDT,
+    Durchlaufzeit = as.numeric(Lieferdatum - Erstelldatum),
+    planned_qty       = coalesce(planned_qty, 0),
+    goods_receipt_qty = coalesce(goods_receipt_qty, 0),
+    return_qty        = coalesce(return_qty, 0)
+  ) %>%
+  select(
+    EBELN, EBELP, MATNR, Erstelldatum, Lieferdatum, Durchlaufzeit,
+    planned_qty, goods_receipt_qty, return_qty
+  )
+
+# für die Shiny-App weiterhin unter dem Namen 'orders'
+orders <- master
+
+## Farbdefinitionen fuer KPI-Balken
+kpi_colors <- list(
+  red    = "#e74c3c",
+  yellow = "#f1c40f",
+  blue   = "#3498db",
+  green  = "#2ecc71",
+  grey   = "#cccccc"
+)
+
+## Durchschnittswerte fuer IFR und OTD
+avg_ifr <- with(orders, {
+  fill_qty <- pmax(pmin(goods_receipt_qty - return_qty, planned_qty), 0)
+  if (sum(planned_qty, na.rm = TRUE) > 0) {
+    sum(fill_qty, na.rm = TRUE) / sum(planned_qty, na.rm = TRUE) * 100
+  } else {
+    NA_real_
+  }
+})
+
+avg_otd <- {
+  ekes_df <- EKES %>% rename(ETENR = ETENS)
+  merged <- EKET %>%
+    inner_join(EKPO %>% select(EBELN, EBELP), by = c("EBELN", "EBELP")) %>%
+    inner_join(ekes_df %>% select(EBELN, EBELP, ETENR, EINDT),
+               by = c("EBELN", "EBELP", "ETENR")) %>%
+    mutate(
+      plannedDate   = as.Date(EINDT.x, format = "%d.%m.%Y"),
+      confirmedDate = as.Date(EINDT.y, format = "%d.%m.%Y")
+    )
+  if (nrow(merged) > 0) {
+    mean(merged$confirmedDate <= merged$plannedDate, na.rm = TRUE) * 100
+  } else {
+    NA_real_
+  }
+}
 
 ## 3) alle KPI-Funktionsdateien sourcen
 lapply(list.files("kpi", "^calculate_.*\\.R$", full.names = TRUE), source)

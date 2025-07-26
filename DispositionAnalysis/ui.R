@@ -4,13 +4,11 @@ library(shinydashboard)
 library(shinythemes)
 library(colourpicker)
 
-
 shinyUI(fluidPage(
   #  titlePanel("Prozessanalyse"),
   
   theme = shinytheme("flatly"),
   
-      
   tags$head(
     tags$style(HTML("
       .top-bar {
@@ -22,9 +20,6 @@ shinyUI(fluidPage(
         border-bottom: 1px solid #ddd;
       }
       .info-box {
-        display: flex;
-        justify-content: space-between; /* spreads items evenly */
-        width: 90%;
         font-weight: bold;
         font-size: 16px;
       }
@@ -67,19 +62,27 @@ shinyUI(fluidPage(
         flex-wrap: wrap;
         margin-top: 20px;
       }
-    "))
+    ")),
+    tags$script(HTML("Shiny.addCustomMessageHandler('update-bar-color', function(col) { var el = document.getElementById('info-container'); if(el){ el.style.backgroundColor = col; } });"))
   ),
   
   # Top Bar
   div(
-    style = "padding-top: 20px;",  # Adjust the value as needed
+    style = "padding-top: 20px;",
     div(
       style = "display: flex; justify-content: space-between; align-items: center;",
       div(
         style = "display: flex; gap: 100px; align-items: center;",
         selectInput("material", "Material:", choices = NULL, width = "180px"),
-        span(HTML("Data Used:<br>from *minDate* to *maxDate*</b>")),
-        span(HTML("Datasets Used:<br>*25_or_lowerNumber*</b>"))
+        span(
+          HTML("Data Used:<br>"),
+          textOutput("data_range", inline = TRUE)
+        ),
+        span(
+          HTML("Datasets Used:<br>"),
+          textOutput("data_count", inline = TRUE)
+        ),
+        uiOutput("all_data_checkbox")
       ),
       actionButton("close_app", "Close", class = "close-button")
     )
@@ -105,7 +108,7 @@ shinyUI(fluidPage(
       
       # One button wrapping the last three KPIs
       actionButton("kpi_time", label = div(
-        style = "display: flex; gap: 10px;",  # adjust spacing between cards
+        style = "display: flex; gap: 10px;",
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "OTD.png", height = 60)),
             div(class = "kpi-number", textOutput("kpi_otdr")),
@@ -126,13 +129,13 @@ shinyUI(fluidPage(
       )
   ),
   
-  
   div(id = "info-container",
-      style = "margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;",
+      class = "info-box",
+      style = paste(
+        "margin-top: 20px; padding: 15px; border: 1px solid #ddd;",
+        "border-radius: 8px; background-color: #cccccc;"
+      ),
       uiOutput("kpi_info")
   )
   
-  
-  
 ))
-
