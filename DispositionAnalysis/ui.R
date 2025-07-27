@@ -20,9 +20,6 @@ shinyUI(fluidPage(
         border-bottom: 1px solid #ddd;
       }
       .info-box {
-        display: flex;
-        justify-content: space-between; /* spreads items evenly */
-        width: 90%;
         font-weight: bold;
         font-size: 16px;
       }
@@ -65,7 +62,8 @@ shinyUI(fluidPage(
         flex-wrap: wrap;
         margin-top: 20px;
       }
-    "))
+    ")),
+    tags$script(HTML("Shiny.addCustomMessageHandler('update-bar-color', function(col) { var el = document.getElementById('info-container'); if(el){ el.style.backgroundColor = col; } });"))
   ),
   
   # Top Bar
@@ -132,7 +130,11 @@ shinyUI(fluidPage(
   ),
   
   div(id = "info-container",
-      style = "margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;",
+      class = "info-box",
+      style = paste(
+        "margin-top: 20px; padding: 15px; border: 1px solid #ddd;",
+        "border-radius: 8px; background-color: #cccccc;"
+      ),
       uiOutput("kpi_info")
   )
   
