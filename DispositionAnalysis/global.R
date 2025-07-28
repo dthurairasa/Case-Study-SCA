@@ -1,6 +1,6 @@
 ### global.R --------------------------------------------------------
 ## 0) Pakete
-libs <- c("shiny", "dplyr", "readxl", "tidyr")
+libs <- c("shiny", "dplyr", "readxl", "tidyr", "Hmisc")
 invisible(lapply(libs, require, character.only = TRUE))
 
 ## 1) Hilfs-Funktion
@@ -18,6 +18,43 @@ EKES  <- read_excel("data/Procurement/EKES.xlsx", guess_max = 10000)
 EKET  <- read_excel("data/Procurement/EKET.xlsx", guess_max = 10000)
 EKKO  <- read_excel("data/Procurement/EKKO.xlsx", guess_max = 10000)
 EKPO  <- read_excel("data/Procurement/EKPO.xlsx", guess_max = 10000)
+
+
+# ---------- 1) Planmenge beim Anlegen der PO einfrieren --------------
+plan_orig <- EKPO %>%                      # nur 1 Zeile je EBELN/EBELP
+  transmute(EBELN, EBELP,
+            plan_qty_orig = parse_number(MENGE))
+
+# ---------- 2) Netto-WE kumuliert (bis Termin & gesamt) --------------
+gr <- EKBE %>% 
+  mutate(qty = case_when(
+    BWART == "101" & SHKZG == "S" ~  parse_number(MENGE),
+    BWART == "102" & SHKZG == "H" ~ -parse_number(MENGE),
+    TRUE                          ~  0)) %>% 
+  arrange(EBELN, EBELP, BUDAT) %>% 
+  group_by(EBELN, EBELP) %>% 
+  mutate(cum_qty = cumsum(qty)) %>% 
+  ungroup()
+
+# bis Fälligkeitstermin:
+gr_due <- gr %>% group_by(EBELN, EBELP) %>% 
+  summarise(cum_qty_at_due = max(cum_qty), .groups="drop")
+
+# kompletter Wareneingang:
+gr_fin <- gr %>% group_by(EBELN, EBELP) %>% 
+  summarise(cum_qty_final = last(cum_qty), .groups="drop")
+
+# ---------- 3) Schedule-Lines IFR berechnen --------------------------
+sched_ifr <- EKET %>% 
+  inner_join(EKPO %>% select(EBELN, EBELP, MATNR), by=c("EBELN","EBELP")) %>% 
+  left_join(plan_orig,     by=c("EBELN","EBELP")) %>% 
+  left_join(gr_due,        by=c("EBELN","EBELP")) %>% 
+  left_join(gr_fin,        by=c("EBELN","EBELP")) %>% 
+  mutate(
+    IFR_service  = pmin(cum_qty_at_due , plan_qty_orig) / plan_qty_orig * 100,
+    IFR_complete = pmin(cum_qty_final  , plan_qty_orig) / plan_qty_orig * 100
+  )
+
 
 # nur Materialien mit Fremdbezug
 materials_ext <- MARC %>%
@@ -161,4 +198,6 @@ avg_otd <- {
 }
 
 ## 3) alle KPI-Funktionsdateien sourcen
+source(file.path("kpi", "ifr_helpers.R"))
 lapply(list.files("kpi", "^calculate_.*\\.R$", full.names = TRUE), source)
+

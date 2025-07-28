@@ -1,76 +1,34 @@
-# --------------------------------------------------------------------
-# Item Fill Rate (IFR) – Netto-Verfügbarkeit je Material
-#  • Planmenge  = Σ EKET-MENGE je PO-Position
-#  • Liefermenge = 101-Wareneingang  minus  102-Storno  (Netto)
-#  • IFR        = min(Liefer, Plan) / Plan   (0-100 %)
-# --------------------------------------------------------------------
+# kpi/calculate_ifr.R  (ersetzt die alte Version)
+# --------------------------------------------------
+# Item Fill Rate (IFR) auf Basis der Master-Tabelle  'orders'
+#  • Planmenge   = planned_qty
+#  • Netto-Liefermenge = goods_receipt_qty – return_qty
+#  • IFR         = min(Netto, Plan) / Plan   (0-100 %)
 
-
-# --------------------------------------------------------------------
-# material_id : Materialnummer (Char oder Numeric)
-# EKET, EKBE, EKPO : bereits eingelesene Data-Frames aus global.R
-# --------------------------------------------------------------------
 calculate_ifr <- function(material_id,
-                          EKET,
-                          EKBE,
-                          EKPO,
-                          po_filter = NULL) {
-  ## 0) Alle PO-Positionen für das Material ermitteln -----------------
-  pos_keys <- EKPO %>%
-    filter(MATNR == as.character(material_id)) %>%
-    select(EBELN, EBELP)
-  if (!is.null(po_filter)) {
-    pos_keys <- semi_join(pos_keys, po_filter, by = c("EBELN", "EBELP"))
-  }
-  if (nrow(pos_keys) == 0)
-    stop("Keine Bestellpositionen für Material ", material_id)
+                          master_df,          # = orders
+                          po_filter = NULL) { # optional: DF mit EBELN / EBELP
   
-  ## 1) Planmenge ------------------------------------------------------
-  planned <- EKET %>%
-    inner_join(pos_keys, by = c("EBELN", "EBELP")) %>%
-    group_by(EBELN, EBELP) %>%
-    summarise(
-      planned_qty = sum(parse_number(MENGE), na.rm = TRUE),
-      .groups      = "drop"
-    )
+  # 0) Zeilen für das Material holen (+ optionaler PO-Filter)
+  rows <- master_df %>% filter(MATNR == as.character(material_id))
+  if (!is.null(po_filter))
+    rows <- semi_join(rows, po_filter, by = c("EBELN", "EBELP"))
+  if (nrow(rows) == 0)
+    stop("Keine Datensätze für Material ", material_id)
   
-  ## 2) Netto-Liefermenge (101-S  –  102-H) ---------------------------
-  delivered <- EKBE %>%
-    filter(BWART %in% c("101", "102")) %>%          # nur 101 & 102
-    inner_join(pos_keys, by = c("EBELN", "EBELP")) %>%
-    mutate(
-      sign = case_when(
-        BWART == "101" & SHKZG == "S" ~  1,
-        BWART == "102" & SHKZG == "H" ~ -1,
-        TRUE                          ~  0
-      )
-    ) %>%
-    group_by(EBELN, EBELP) %>%
-    summarise(
-      delivered_qty = sum(sign * parse_number(MENGE), na.rm = TRUE),
-      .groups        = "drop"
-    )
+  # 1) Netto-Liefermenge & gekappte Liefermenge
+  rows <- rows %>%
+    mutate(netto_qty = goods_receipt_qty - return_qty,
+           fill_qty  = pmin(netto_qty, planned_qty))   # Überlieferung kappen
   
-  ## 3) IFR je Position (0-100 %) -------------------------------------
-  ifr_pos <- planned %>%
-    left_join(delivered, by = c("EBELN", "EBELP")) %>%
-    mutate(
-      delivered_qty = coalesce(delivered_qty, 0),
-      fill_qty      = pmax(pmin(delivered_qty, planned_qty), 0),
-      ifr_pos       = fill_qty / planned_qty * 100
-    )
+  # 2) Aggregation auf Materialebene
+  ifr <- rows %>% summarise(
+    total_planned   = sum(planned_qty),
+    total_delivered = sum(fill_qty),
+    ifr_value       = total_delivered / total_planned * 100
+  ) %>% pull(ifr_value)
   
-  ## 4) Aggregiert auf Material ---------------------------------------
-  ifr_material <- ifr_pos %>%
-    summarise(
-      total_planned   = sum(planned_qty,   na.rm = TRUE),
-      total_delivered = sum(fill_qty,      na.rm = TRUE),
-      ifr_raw         = total_delivered / total_planned * 100
-    ) %>%
-    pull(ifr_raw)
-  
-  ## 5) Ergebnis -------------------------------------------------------
   message(sprintf("Item Fill Rate für Material %s: %.2f %%",
-                  material_id, ifr_material))
-  return(ifr_material)
+                  material_id, ifr))
+  return(ifr)
 }

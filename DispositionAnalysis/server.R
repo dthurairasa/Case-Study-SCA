@@ -77,8 +77,24 @@ shinyServer(function(input, output, session) {
     req(input$material)
     po_keys <- df_used() %>% select(EBELN, EBELP)
     
+    # IFR-Details einmal berechnen
+    ifr_det <- get_ifr_details(
+      material_id = input$material,
+      master_df   = orders,
+      top_n       = if (isTRUE(input$use_all)) NULL else 25,
+      target_ifr  = 95,  # z.B. 0.80 oder 0.95 ausprobieren
+      min_up_pct  = 5
+    )
+    
     list(
-      ifr   = calculate_ifr (input$material, EKET, EKBE, EKPO, po_filter = po_keys),
+      ifr_value = ifr_det$item_ifr,
+      ifr_flag  = ifr_det$flag,
+      ifr_reco  = ifr_det$recommendation,
+      ifr_box   = ifr_det$boxplot_vec,
+      ifr_time  = ifr_det$timeline_tbl,
+      ifr_avg   = ifr_det$avg_ifr_all, 
+      
+      
       otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
       poct  = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
       ltime = calculate_lead_time(input$material, EBAN, EKKO,       po_filter = po_keys)
@@ -86,45 +102,75 @@ shinyServer(function(input, output, session) {
   })
   
   ## KPI-Cards (Text-Outputs für ui.R)
-  output$kpi_ifr   <- renderText( sprintf("%.1f %%", kpi_vals()$ifr) )
+  output$kpi_ifr <- renderText(sprintf("%.1f %%", kpi_vals()$ifr_value))
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
   output$kpi_poct  <- renderText( sprintf("%.1f d",  kpi_vals()$poct) )
   output$kpi_lead  <- renderText( sprintf("%.1f d",  kpi_vals()$ltime) )
   
+  
+  ## IFR-Daten für Detailansicht
+  output$ifr_flag <- renderText(kpi_vals()$ifr_flag)
+  output$ifr_avg <- renderText(sprintf("Ø IFR (alle Materialien): %.1f %%",
+                                       kpi_vals()$ifr_avg))
+  output$ifr_reco <- renderText(kpi_vals()$ifr_reco)
+  
+  output$ifr_boxplot <- renderPlot({
+    boxplot(kpi_vals()$ifr_box,
+            main = "IFR-Verteilung (letzte Bestellungen)",
+            ylab = "IFR %")
+  })
+  
+  output$ifr_timeline <- renderPlot({
+    df <- kpi_vals()$ifr_time
+    ggplot(df, aes(x = Lieferdatum, y = ifr_line)) +
+      geom_line() + geom_point() +
+      labs(title = "IFR-Zeitreihe", y = "IFR %", x = "Lieferdatum") +
+      theme_minimal()
+  })
+  
+  ## -------------------------------------------------
+  ## 4) Zusätzliche Ampel-Info (bei Klick auf KPI-Karte)
+  ## -------------------------------------------------
+  
+  # Farbcodes deiner App – ggf. anpassen
+  kpi_colors <- list(red  = "#d9534f",
+                     yellow = "#f0ad4e",
+                     blue  = "#5bc0de",
+                     green = "#5cb85c",
+                     grey  = "#999999")
+  
   get_color_info <- function(value, avg) {
     if (is.na(avg)) {
-      list(color = kpi_colors$grey,
-           desc  = "no average available")
+      list(color = kpi_colors$grey,   desc = "no average available")
     } else if (value < avg * 0.90) {
-      list(color = kpi_colors$red,
-           desc  = ">10% below average")
+      list(color = kpi_colors$red,    desc = ">10 % below average")
     } else if (value < avg * 0.95) {
-      list(color = kpi_colors$yellow,
-           desc  = "5-10% below average")
+      list(color = kpi_colors$yellow, desc = "5–10 % below average")
     } else if (value <= avg * 1.05) {
-      list(color = kpi_colors$blue,
-           desc  = "within \u00B15% of average")
+      list(color = kpi_colors$blue,   desc = "within ±5 % of average")
     } else {
-      list(color = kpi_colors$green,
-           desc  = ">5% above average")
+      list(color = kpi_colors$green,  desc = ">5 % above average")
     }
   }
-  ## ------------------------------------------
-  ## 3) Extra-Information
-  ## ------------------------------------------
-  selected_kpi   <- reactiveVal(NULL)
-  selected_rule  <- reactiveVal(NULL)
+  
+  ## Durchschnittswerte einmalig aus kpi_vals()
+  avg_ifr <- reactive(kpi_vals()$avg_ifr_all)            # kommt aus get_ifr_details
+  avg_otd <- reactive(mean(kpi_vals()$otdr * 100, na.rm = TRUE))  # Beispiel
+  
+  selected_kpi  <- reactiveVal(NULL)
+  selected_rule <- reactiveVal(NULL)
   
   observeEvent(input$kpi_ifr, {
-    info  <- get_color_info(kpi_vals()$ifr, avg_ifr)
-    selected_kpi("Item Information")
+    info  <- get_color_info(kpi_vals()$ifr_value, avg_ifr())
+    selected_kpi ("Item Fill Rate")
     selected_rule(info$desc)
     session$sendCustomMessage("update-bar-color", info$color)
   })
-  observeEvent(input$kpi_time, {
+  
+  observeEvent(input$kpi_time, {   # Button-ID 'kpi_time' muss in ui.R existieren
     value <- kpi_vals()$otdr * 100
-    info  <- get_color_info(value, avg_otd)
-    selected_kpi("Time Information")
+    info  <- get_color_info(value, avg_otd())
+    selected_kpi ("On-Time Delivery")
     selected_rule(info$desc)
     session$sendCustomMessage("update-bar-color", info$color)
   })
@@ -136,6 +182,7 @@ shinyServer(function(input, output, session) {
       kpi  <- "Please select the field you are interested in"
       desc <- ""
     }
+
     div(
       style = "display:flex; width:100%;",
       div(style = "flex:1;"),
