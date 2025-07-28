@@ -116,12 +116,12 @@ shinyUI(fluidPage(
         ),
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "OCT.png", height = 60)),
-            div(class = "kpi-number", textOutput("kpi_poct")),
+            div(class = "kpi-number", textOutput("kpi_oct")),
             div(class = "kpi-name", "Order Cycle Time")
         ),
         div(class = "kpi-card",
             div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
-            div(class = "kpi-number", textOutput("kpi_lead")),
+            div(class = "kpi-number", textOutput("kpi_delay")),
             div(class = "kpi-name", "Mean Delay")
         )
       ),
@@ -136,7 +136,8 @@ shinyUI(fluidPage(
         "border-radius: 8px; background-color: #cccccc;"
       ),
       uiOutput("kpi_info")
-  )
+  ), 
+  uiOutput("kpi_dynamic_ui")
   
 ))
 

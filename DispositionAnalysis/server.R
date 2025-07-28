@@ -96,16 +96,16 @@ shinyServer(function(input, output, session) {
       
       
       otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
-      poct  = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
-      ltime = calculate_lead_time(input$material, EBAN, EKKO,       po_filter = po_keys)
+      oct  = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
+      delay = calculate_mean_delay(input$material, orders)
     )
   })
   
   ## KPI-Cards (Text-Outputs für ui.R)
   output$kpi_ifr <- renderText(sprintf("%.1f %%", kpi_vals()$ifr_value))
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
-  output$kpi_poct  <- renderText( sprintf("%.1f d",  kpi_vals()$poct) )
-  output$kpi_lead  <- renderText( sprintf("%.1f d",  kpi_vals()$ltime) )
+  output$kpi_oct  <- renderText( sprintf("%.1f d",  kpi_vals()$oct) )
+  output$kpi_delay  <- renderText( sprintf("%.1f d",  kpi_vals()$delay) )
   
   
   ## IFR-Daten für Detailansicht
@@ -129,7 +129,7 @@ shinyServer(function(input, output, session) {
   })
   
   ## -------------------------------------------------
-  ## 4) Zusätzliche Ampel-Info (bei Klick auf KPI-Karte)
+  ## 4) Zusätzliche Info 
   ## -------------------------------------------------
   
   # Farbcodes deiner App – ggf. anpassen
@@ -159,13 +159,23 @@ shinyServer(function(input, output, session) {
   
   selected_kpi  <- reactiveVal(NULL)
   selected_rule <- reactiveVal(NULL)
+  plot_state <- reactiveVal("box")  # can be "box" or "time"
   
   observeEvent(input$kpi_ifr, {
-    info  <- get_color_info(kpi_vals()$ifr_value, avg_ifr())
-    selected_kpi ("Item Fill Rate")
+    value <- kpi_vals()$ifr_value
+    avg   <- avg_ifr()
+    
+    if (is.numeric(value) && is.numeric(avg)) {
+      info <- get_color_info(value, avg)
+    } else {
+      info <- list(color = kpi_colors$grey, desc = "value or average is not available")
+    }
+    
+    selected_kpi("Item Fill Rate")
     selected_rule(info$desc)
     session$sendCustomMessage("update-bar-color", info$color)
   })
+  
   
   observeEvent(input$kpi_time, {   # Button-ID 'kpi_time' muss in ui.R existieren
     value <- kpi_vals()$otdr * 100
@@ -191,31 +201,59 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  ## ------------------------------------------
-  ## 3) Histogramm der Durchlaufzeiten
-  ## ------------------------------------------
-  output$durchlaufPlot <- renderPlot({
-    ggplot(df_filtered(), aes(x = Durchlaufzeit)) +
-      geom_histogram(binwidth = 1) +
-      labs(title = "Verteilung der Durchlaufzeiten",
-           x = "Durchlaufzeit (Tage)",
-           y = "Anzahl Aufträge") +
-      theme_minimal()
+  plot_state <- reactiveVal("box")  # can be "box" or "time"
+  
+  # Button toggles plot type and label
+  observeEvent(input$toggle_plot, {
+    new_state <- if (plot_state() == "box") "time" else "box"
+    plot_state(new_state)
+    
+    updateActionButton(session, "toggle_plot",
+                       label = if (new_state == "box") "Timeline" else "Variation")
   })
   
-  ## ------------------------------------------
-  ## 4) Tabelle
-  ## ------------------------------------------
-  output$dtTable <- renderDataTable(
-    df_filtered(),
-    options = list(pageLength = 10, autoWidth = TRUE)
-  )
+  # Dynamic placeholder for boxplot/timeplot text
+  output$kpi_plot <- renderUI({
+    if (plot_state() == "box") {
+      div(style = "text-align: center; font-size: 24px; padding: 100px 0;", "Boxplot")
+    } else {
+      div(style = "text-align: center; font-size: 24px; padding: 100px 0;", "Timeplot")
+    }
+  })
   
-  ## ------------------------------------------
-  ## 5) Download
-  ## ------------------------------------------
-  output$downloadData <- downloadHandler(
-    filename = function() paste0("Prozessanalyse_", Sys.Date(), ".xlsx"),
-    content  = function(file) writexl::write_xlsx(df_filtered(), path = file)
-  )
+  
+  output$kpi_dynamic_ui <- renderUI({
+    kpi <- selected_kpi()
+    if (is.null(kpi)) return(NULL)
+    
+    # Left content
+    left_col <- switch(kpi,
+                       "Item Fill Rate" = column(6,
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Item Fill Rate of the Product on average: ", "Output here"),
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Item Fill Rate of the Company on average: ", "Output here"),
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Worst Item Fill Rate of the Product: ", "Output here"),
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Best Item Fill Rate of the Product: ", "Output here")
+                       ),
+                       "On-Time Delivery" = column(6,
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "On Time Delivery Rate of the Product on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "On Time Delivery Rate of the Company on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "Mean Delay of the Product on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "Mean Delay Delivery Rate of the Company on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "Worst Delay of the Product: ", "Output here")
+                       ),
+                       column(6, div("Unknown KPI"))
+    )
+    
+    # Right content
+    right_col <- column(6,
+                        uiOutput("kpi_plot"),
+                        br(),
+                        actionButton("toggle_plot", "Timeline")
+    )
+    
+    fluidRow(left_col, right_col)
+  })
+  
+  
+  
 })
