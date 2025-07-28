@@ -1,0 +1,30 @@
+# ▸ Boxplot der Verspätungen für EIN Material
+boxplot_delay <- function(material_id,
+                          master_df,          # = orders
+                          po_filter = NULL) { # optional EBELN/EBELP‑Subset
+  
+  # 0) Zeilen für das Material holen (+ optionaler PO‑Filter)
+  rows <- master_df %>% filter(MATNR == as.character(material_id))
+  if (!is.null(po_filter))
+    rows <- semi_join(rows, po_filter, by = c("EBELN", "EBELP"))
+  if (nrow(rows) == 0)
+    stop("Kein Delay‑Datensatz für Material ", material_id)
+  
+  # 1) Verspätung berechnen (Datum bestätigt minus geplant)
+  rows <- rows %>%
+    mutate(delay_days = as.numeric(
+      as.Date(EINDT.y, "%d.%m.%Y") - as.Date(EINDT.x, "%d.%m.%Y"))
+    )
+  
+  # 2) Box‑&‑Whisker‑Plot zurückgeben
+  ggplot(rows, aes(x = "", y = delay_days)) +
+    geom_boxplot(fill = "grey85", width = .25, outlier.shape = NA) +
+    geom_jitter(width = .1, colour = "steelblue", size = 2, alpha = .7) +
+    labs(
+      title = paste("Verspätungsverteilung – Material", material_id),
+      y     = "Verspätung in Tagen",
+      x     = NULL
+    ) +
+    theme_minimal() +
+    coord_flip()
+}
