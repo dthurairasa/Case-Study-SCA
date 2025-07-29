@@ -4,9 +4,10 @@ library(dplyr)
 
 calculate_otdr <- function(
     material_id,                   # Materialnummer als Zeichen, z.B. "310586"
-    EKET, 
-    EKES, 
-    EKPO
+    EKET,
+    EKES,
+    EKPO,
+    po_filter = NULL
 ) {
   # 1) MATNR aus EKPO an EKET koppeln
   eket_mat <- EKET %>%
@@ -14,6 +15,9 @@ calculate_otdr <- function(
       EKPO %>% select(EBELN, EBELP, MATNR),
       by = c("EBELN", "EBELP")
     )
+  if (!is.null(po_filter)) {
+    eket_mat <- semi_join(eket_mat, po_filter, by = c("EBELN", "EBELP"))
+  }
   
   # 2) Nach dem ausgewählten Material filtern
   eket_mat <- eket_mat %>%

@@ -12,19 +12,9 @@ library(writexl)   # für Excel-Export
 shinyServer(function(input, output, session) {
   
   ## ------------------------------------------
-  ## 0) Hilfs-Reaktivitäten (Werk & Material)
+  ## 0) Hilfs-Reaktivität (Material)
   ## ------------------------------------------
-  # Drop-down „Werk“ füllen, sobald orders da ist
-  observe({
-    req(orders)
-    werke <- sort(unique(orders$WERKS))
-    
-    updateSelectInput(session, "werk",
-                      choices  = werke,
-                      selected = first(werke))
-  })
-  
-  # Material-Liste für zweites Drop-down (falls noch nicht im UI)
+  # Material-Liste für Drop-down füllen
   observe({
     req(orders)
     mats <- sort(unique(orders$MATNR))
@@ -34,64 +24,236 @@ shinyServer(function(input, output, session) {
   })
   
   ## ------------------------------------------
-  ## 1) Daten nach Werk & Zeitraum filtern
+  ## 1) Daten nach Material filtern
   ## ------------------------------------------
   df_filtered <- reactive({
-    req(input$werk, input$zeitraum)
+    req(input$material)
     orders %>%
-      filter(
-        WERKS        == input$werk,
-        Lieferdatum >= input$zeitraum[1],
-        Lieferdatum <= input$zeitraum[2]
-      )
+      filter(MATNR == input$material) %>%
+      arrange(desc(Lieferdatum))
   })
+  
+  ## Datensatz pro Material auf die neuesten 25 Einträge begrenzen
+  df_last25 <- reactive({
+    req(input$material)
+    df_filtered() %>%
+      slice_head(n = 25)
+  })
+  
+  ## Daten für KPI abhängig von Checkbox
+  df_used <- reactive({
+    if (!is.null(input$use_all) && input$use_all) {
+      df_filtered()
+    } else {
+      df_last25()
+    }
+  })
+  
+  ## Checkbox anzeigen, wenn mehr als 25 Datensätze vorhanden sind
+  output$all_data_checkbox <- renderUI({
+    if (nrow(df_filtered()) > 25) {
+      checkboxInput("use_all", "Use all data", value = FALSE)
+    }
+  })
+  
+  ## Kennzahlen für Anzeige "Data Used" und "Datasets Used"
+  output$data_range <- renderText({
+    df <- df_used()
+    if (nrow(df) == 0) return("-")
+    paste0(
+      "from ", format(min(df$Lieferdatum), "%d.%m.%Y"),
+      " to ", format(max(df$Lieferdatum), "%d.%m.%Y")
+    )
+  })
+  
+  output$data_count <- renderText({
+    nrow(df_used())
+  })  
   
   ## ------------------------------------------
   ## 2) KPI-Berechnung (pro Material)
   ## ------------------------------------------
   kpi_vals <- reactive({
     req(input$material)
+    po_keys <- df_used() %>% select(EBELN, EBELP)
+    
+    # IFR-Details einmal berechnen
+    ifr_det <- get_ifr_details(
+      material_id = input$material,
+      master_df   = orders,
+      top_n       = if (isTRUE(input$use_all)) NULL else 25,
+      target_ifr  = 95,  # z.B. 0.80 oder 0.95 ausprobieren
+      min_up_pct  = 5
+    )
     
     list(
-      # Reihenfolge der Argumente anpassen!
-      ifr   = calculate_ifr (input$material, EKET, EKBE, EKPO),     # %-Wert 0-100
-      otdr  = calculate_otdr(input$material, EKET, EKES, EKPO),     # Rate   0-1
-      poct  = calculate_poct(input$material, EKPO, EKKO, EKBE),     # Tage
-      ltime = calculate_lead_time(input$material, EBAN, EKKO)       # Tage
+      ifr_value = ifr_det$item_ifr,
+      ifr_flag  = ifr_det$flag,
+      ifr_reco  = ifr_det$recommendation,
+      ifr_box   = ifr_det$boxplot_vec,
+      ifr_time  = ifr_det$timeline_tbl,
+      ifr_avg   = ifr_det$avg_ifr_all, 
+      
+      
+      otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
+      oct  = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
+      delay = calculate_mean_delay(input$material, orders)
     )
   })
   
   ## KPI-Cards (Text-Outputs für ui.R)
-  output$kpi_ifr   <- renderText( sprintf("%.1f %%", kpi_vals()$ifr) )
+  output$kpi_ifr <- renderText(sprintf("%.1f %%", kpi_vals()$ifr_value))
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
-  output$kpi_poct  <- renderText( sprintf("%.1f d",  kpi_vals()$poct) )
-  output$kpi_lead  <- renderText( sprintf("%.1f d",  kpi_vals()$ltime) )
+  output$kpi_oct  <- renderText( sprintf("%.1f d",  kpi_vals()$oct) )
+  output$kpi_delay  <- renderText( sprintf("%.1f d",  kpi_vals()$delay) )
   
-  ## ------------------------------------------
-  ## 3) Histogramm der Durchlaufzeiten
-  ## ------------------------------------------
-  output$durchlaufPlot <- renderPlot({
-    ggplot(df_filtered(), aes(x = Durchlaufzeit)) +
-      geom_histogram(binwidth = 1) +
-      labs(title = "Verteilung der Durchlaufzeiten",
-           x = "Durchlaufzeit (Tage)",
-           y = "Anzahl Aufträge") +
+  
+  ## IFR-Daten für Detailansicht
+  output$ifr_flag <- renderText(kpi_vals()$ifr_flag)
+  output$ifr_avg <- renderText(sprintf("Ø IFR (alle Materialien): %.1f %%",
+                                       kpi_vals()$ifr_avg))
+  output$ifr_reco <- renderText(kpi_vals()$ifr_reco)
+  
+  output$ifr_boxplot <- renderPlot({
+    boxplot(kpi_vals()$ifr_box,
+            main = "IFR-Verteilung (letzte Bestellungen)",
+            ylab = "IFR %")
+  })
+  
+  output$ifr_timeline <- renderPlot({
+    df <- kpi_vals()$ifr_time
+    ggplot(df, aes(x = Lieferdatum, y = ifr_line)) +
+      geom_line() + geom_point() +
+      labs(title = "IFR-Zeitreihe", y = "IFR %", x = "Lieferdatum") +
       theme_minimal()
   })
   
-  ## ------------------------------------------
-  ## 4) Tabelle
-  ## ------------------------------------------
-  output$dtTable <- renderDataTable(
-    df_filtered(),
-    options = list(pageLength = 10, autoWidth = TRUE)
-  )
+  ## -------------------------------------------------
+  ## 4) Zusätzliche Info 
+  ## -------------------------------------------------
   
-  ## ------------------------------------------
-  ## 5) Download
-  ## ------------------------------------------
-  output$downloadData <- downloadHandler(
-    filename = function() paste0("Prozessanalyse_", Sys.Date(), ".xlsx"),
-    content  = function(file) writexl::write_xlsx(df_filtered(), path = file)
-  )
+  # Farbcodes deiner App – ggf. anpassen
+  kpi_colors <- list(red  = "#d9534f",
+                     yellow = "#f0ad4e",
+                     blue  = "#5bc0de",
+                     green = "#5cb85c",
+                     grey  = "#999999")
+  
+  get_color_info <- function(value, avg) {
+    if (is.na(avg)) {
+      list(color = kpi_colors$grey,   desc = "no average available")
+    } else if (value < avg * 0.90) {
+      list(color = kpi_colors$red,    desc = ">10 % below average")
+    } else if (value < avg * 0.95) {
+      list(color = kpi_colors$yellow, desc = "5–10 % below average")
+    } else if (value <= avg * 1.05) {
+      list(color = kpi_colors$blue,   desc = "within ±5 % of average")
+    } else {
+      list(color = kpi_colors$green,  desc = ">5 % above average")
+    }
+  }
+  
+  ## Durchschnittswerte einmalig aus kpi_vals()
+  avg_ifr <- reactive(kpi_vals()$avg_ifr_all)            # kommt aus get_ifr_details
+  avg_otd <- reactive(mean(kpi_vals()$otdr * 100, na.rm = TRUE))  # Beispiel
+  
+  selected_kpi  <- reactiveVal(NULL)
+  selected_rule <- reactiveVal(NULL)
+  plot_state <- reactiveVal("box")  # can be "box" or "time"
+  
+  observeEvent(input$kpi_ifr, {
+    value <- kpi_vals()$ifr_value
+    avg   <- avg_ifr()
+    
+    if (is.numeric(value) && is.numeric(avg)) {
+      info <- get_color_info(value, avg)
+    } else {
+      info <- list(color = kpi_colors$grey, desc = "value or average is not available")
+    }
+    
+    selected_kpi("Item Fill Rate")
+    selected_rule(info$desc)
+    session$sendCustomMessage("update-bar-color", info$color)
+  })
+  
+  
+  observeEvent(input$kpi_time, {   # Button-ID 'kpi_time' muss in ui.R existieren
+    value <- kpi_vals()$otdr * 100
+    info  <- get_color_info(value, avg_otd())
+    selected_kpi ("On-Time Delivery")
+    selected_rule(info$desc)
+    session$sendCustomMessage("update-bar-color", info$color)
+  })
+  
+  output$kpi_info <- renderUI({
+    kpi  <- selected_kpi()
+    desc <- selected_rule()
+    if (is.null(kpi)) {
+      kpi  <- "Please select the field you are interested in"
+      desc <- ""
+    }
+
+    div(
+      style = "display:flex; width:100%;",
+      div(style = "flex:1;"),
+      div(kpi,  style = "flex:1; text-align:center;"),
+      div(desc, style = "flex:1; text-align:right; font-size:0.9em; font-style:italic;")
+    )
+  })
+  
+  plot_state <- reactiveVal("box")  # can be "box" or "time"
+  
+  # Button toggles plot type and label
+  observeEvent(input$toggle_plot, {
+    new_state <- if (plot_state() == "box") "time" else "box"
+    plot_state(new_state)
+    
+    updateActionButton(session, "toggle_plot",
+                       label = if (new_state == "box") "Timeline" else "Variation")
+  })
+  
+  # Dynamic placeholder for boxplot/timeplot text
+  output$kpi_plot <- renderUI({
+    if (plot_state() == "box") {
+      div(style = "text-align: center; font-size: 24px; padding: 100px 0;", "Boxplot")
+    } else {
+      div(style = "text-align: center; font-size: 24px; padding: 100px 0;", "Timeplot")
+    }
+  })
+  
+  
+  output$kpi_dynamic_ui <- renderUI({
+    kpi <- selected_kpi()
+    if (is.null(kpi)) return(NULL)
+    
+    # Left content
+    left_col <- switch(kpi,
+                       "Item Fill Rate" = column(6,
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Item Fill Rate of the Product on average: ", "Output here"),
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Item Fill Rate of the Company on average: ", "Output here"),
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Worst Item Fill Rate of the Product: ", "Output here"),
+                                                 div(style = "font-size: 20px; padding: 7px 0;", "Best Item Fill Rate of the Product: ", "Output here")
+                       ),
+                       "On-Time Delivery" = column(6,
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "On Time Delivery Rate of the Product on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "On Time Delivery Rate of the Company on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "Mean Delay of the Product on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "Mean Delay Delivery Rate of the Company on average: ", "Output here"),
+                                                   div(style = "font-size: 20px; padding: 5px 0;", "Worst Delay of the Product: ", "Output here")
+                       ),
+                       column(6, div("Unknown KPI"))
+    )
+    
+    # Right content
+    right_col <- column(6,
+                        uiOutput("kpi_plot"),
+                        br(),
+                        actionButton("toggle_plot", "Timeline")
+    )
+    
+    fluidRow(left_col, right_col)
+  })
+  
+  
+  
 })

@@ -1,0 +1,572 @@
+#laden der datei#
+daten <- read.csv()#
+#
+#Laden der Pakete#
+library(tidyr)#
+install.packages("ggplot2")#
+library(ggplot2)#
+library(dplyr)#
+#
+###Mittelwerte und Boxplots#
+#
+  ##Wertigkeit#
+#
+    #Mittelwert Berechnung#
+daten$mean_Wertigkeit_HipHop1 <- rowMeans(daten[, c("Wertigkeit1_HipHop1_outfits", "Wertigkeit2_HipHop1_outfits", "Wertigkeit3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Min1 <- rowMeans(daten[, c("Wertigkeit1_Min1_outfits", "Wertigkeit2_Min1_outfits", "Wertigkeit3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Hippie1 <- rowMeans(daten[, c("Wertigkeit1_Hippie1_outfits", "Wertigkeit2_Hippie1_outfits", "Wertigkeit3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_HipHop2 <- rowMeans(daten[, c("Wertigkeit1_HipHop2_outfits", "Wertigkeit2_HipHop2_outfits", "Wertigkeit3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Min2 <- rowMeans(daten[, c("Wertigkeit1_Min2_outfits", "Wertigkeit2_Min2_outfits", "Wertigkeit3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Hippie2 <- rowMeans(daten[, c("Wertigkeit1_Hippie2_outfits", "Wertigkeit2_Hippie2_outfits", "Wertigkeit3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_wertigkeit <- daten %>%#
+  pivot_longer(cols = c("mean_Wertigkeit_HipHop1", "mean_Wertigkeit_Min1", "mean_Wertigkeit_Hippie1", "mean_Wertigkeit_HipHop2", "mean_Wertigkeit_Min2", "mean_Wertigkeit_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Wertigkeit")#
+#
+    #Boxplots für Wertigkeit#
+ggplot(daten_long_wertigkeit, aes(x = Outfit_Type, y = Mean_Wertigkeit, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Wertigkeit", y = "Mean Wertigkeit", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Wertigkeit_HipHop1" = "grey", #
+                               "mean_Wertigkeit_Min1" = "#00CED1", #
+                               "mean_Wertigkeit_Hippie1" = "lightblue",#
+                               "mean_Wertigkeit_HipHop2" = "darkgrey",#
+                               "mean_Wertigkeit_Min2" = "darkturquoise",#
+                               "mean_Wertigkeit_Hippie2" = "blue"))#
+#
+  ##Konsistenz#
+#
+    #Mittelwert Berechnung#
+daten$mean_Konsistenz_HipHop1 <- rowMeans(daten[, c("Konsistenz1_HipHop1_outfits", "Konsistenz2_HipHop1_outfits", "Konsistenz3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min1 <- rowMeans(daten[, c("Konsistenz1_Min1_outfits", "Konsistenz2_Min1_outfits", "Konsistenz3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Hippie1 <- rowMeans(daten[, c("Konsistenz1_Hippie1_outfits", "Konsistenz2_Hippie1_outfits", "Konsistenz3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_HipHop2 <- rowMeans(daten[, c("Konsistenz1_HipHop2_outfits", "Konsistenz2_HipHop2_outfits", "Konsistenz3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min2 <- rowMeans(daten[, c("Konsistenz1_Min2_outfits", "Konsistenz2_Min2_outfits", "Konsistenz3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Hippie2 <- rowMeans(daten[, c("Konsistenz1_Hippie2_outfits", "Konsistenz2_Hippie2_outfits", "Konsistenz3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_konsistenz <- daten %>%#
+  pivot_longer(cols = c("mean_Konsistenz_HipHop1", "mean_Konsistenz_Min1", "mean_Konsistenz_Hippie1", "mean_Konsistenz_HipHop2", "mean_Konsistenz_Min2", "mean_Konsistenz_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Konsistenz")#
+#
+    #Boxplots für Konsistenz#
+ggplot(daten_long_konsistenz, aes(x = Outfit_Type, y = Mean_Konsistenz, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Konsistenz", y = "Mean Konsistenz", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Konsistenz_HipHop1" = "grey", #
+                               "mean_Konsistenz_Min1" = "#00CED1", #
+                               "mean_Konsistenz_Hippie1" = "lightblue",#
+                               "mean_Konsistenz_HipHop2" = "darkgrey",#
+                               "mean_Konsistenz_Min2" = "darkturquoise",#
+                               "mean_Konsistenz_Hippie2" = "blue"))#
+#
+  ##Liking#
+#
+    #Mittelwert Berechnung#
+daten$mean_Liking_HipHop1 <- rowMeans(daten[, c("Liking1_HipHop1_outfits", "Liking2_HipHop1_outfits", "Liking3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Min1 <- rowMeans(daten[, c("Liking1_Min1_outfits", "Liking2_Min1_outfits", "Liking3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Hippie1 <- rowMeans(daten[, c("Liking1_Hippie1_outfits", "Liking2_Hippie1_outfits", "Liking3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_HipHop2 <- rowMeans(daten[, c("Liking1_HipHop2_outfits", "Liking2_HipHop2_outfits", "Liking3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Min2 <- rowMeans(daten[, c("Liking1_Min2_outfits", "Liking2_Min2_outfits", "Liking3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Hippie2 <- rowMeans(daten[, c("Liking1_Hippie2_outfits", "Liking2_Hippie2_outfits", "Liking3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_liking <- daten %>%#
+  pivot_longer(cols = c("mean_Liking_HipHop1", "mean_Liking_Min1", "mean_Liking_Hippie1", "mean_Liking_HipHop2", "mean_Liking_Min2", "mean_Liking_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Liking")#
+#
+    #Boxplots für Liking#
+ggplot(daten_long_liking, aes(x = Outfit_Type, y = Mean_Liking, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Liking", y = "Mean Liking", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Liking_HipHop1" = "grey", #
+                               "mean_Liking_Min1" = "#00CED1", #
+                               "mean_Liking_Hippie1" = "lightblue",#
+                               "mean_Liking_HipHop2" = "darkgrey",#
+                               "mean_Liking_Min2" = "darkturquoise",#
+                               "mean_Liking_Hippie2" = "blue"))#
+###Gemischte Outfits#
+## Wertigkeit#
+#
+# Mittelwert Berechnung#
+daten$mean_Wertigkeit_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Wertigkeit1_RelativeSize_MinXHippie2_outfits", "Wertigkeit2_RelativeSize_MinXHippie2_outfits", "Wertigkeit3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Abgrenzung_HipHopXMin2 <- rowMeans(daten[, c("Wertigkeit1_Abgrenzung_HipHopXMin2_outfits", "Wertigkeit2_Abgrenzung_HipHopXMin2_outfits", "Wertigkeit3_Abgrenzung_HipHopXMin2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Wertigkeit1_Zentralität_MinXHippie2_outfits", "Wertigkeit2_Zentralität_MinXHippie2_outfits", "Wertigkeit3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Wertigkeit1_RelativeSize_HippieXHipHop1_outfits", "Wertigkeit2_RelativeSize_HippieXHipHop1_outfits", "Wertigkeit3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Wertigkeit1_Abgrenzung_HipHopXMinXHippie1_outfits", "Wertigkeit2_Abgrenzung_HipHopXMinXHippie1_outfits", "Wertigkeit3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Wertigkeit1_Zentralität_MinXHippieXHipHop1_outfits", "Wertigkeit2_Zentralität_MinXHippieXHipHop1_outfits", "Wertigkeit3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_wertigkeit <- daten %>%#
+  pivot_longer(cols = c("mean_Wertigkeit_RelativeSize_MinXHippie2", "mean_Wertigkeit_Abgrenzung_HipHopXMin2", "mean_Wertigkeit_Zentralität_MinXHippie2", "mean_Wertigkeit_RelativeSize_HippieXHipHop1", "mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1", "mean_Wertigkeit_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Wertigkeit")#
+#
+# Boxplots für Wertigkeit#
+ggplot(daten_long_wertigkeit, aes(x = Outfit_Type, y = Mean_Wertigkeit, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Wertigkeit", y = "Mean Wertigkeit", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Wertigkeit_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Wertigkeit_Abgrenzung_HipHopXMin2" = "#00CED1", #
+                               "mean_Wertigkeit_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Wertigkeit_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Wertigkeit_Zentralität_MinXHippieXHipHop1" = "blue"))#
+#
+## Konsistenz#
+#
+# Mittelwert Berechnung#
+daten$mean_Konsistenz_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Konsistenz1_RelativeSize_MinXHippie2_outfits", "Konsistenz2_RelativeSize_MinXHippie2_outfits", "Konsistenz3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min1 <- rowMeans(daten[, c("Konsistenz1_Min1_outfits", "Konsistenz2_Min1_outfits", "Konsistenz3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Konsistenz1_Zentralität_MinXHippie2_outfits", "Konsistenz2_Zentralität_MinXHippie2_outfits", "Konsistenz3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Konsistenz1_RelativeSize_HippieXHipHop1_outfits", "Konsistenz2_RelativeSize_HippieXHipHop1_outfits", "Konsistenz3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Konsistenz1_Abgrenzung_HipHopXMinXHippie1_outfits", "Konsistenz2_Abgrenzung_HipHopXMinXHippie1_outfits", "Konsistenz3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Konsistenz1_Zentralität_MinXHippieXHipHop1_outfits", "Konsistenz2_Zentralität_MinXHippieXHipHop1_outfits", "Konsistenz3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_konsistenz <- daten %>%#
+  pivot_longer(cols = c("mean_Konsistenz_RelativeSize_MinXHippie2", "mean_Konsistenz_Min1", "mean_Konsistenz_Zentralität_MinXHippie2", "mean_Konsistenz_RelativeSize_HippieXHipHop1", "mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1", "mean_Konsistenz_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Konsistenz")#
+#
+# Boxplots für Konsistenz#
+ggplot(daten_long_konsistenz, aes(x = Outfit_Type, y = Mean_Konsistenz, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Konsistenz", y = "Mean Konsistenz", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Konsistenz_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Konsistenz_Min1" = "#00CED1", #
+                               "mean_Konsistenz_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Konsistenz_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Konsistenz_Zentralität_MinXHippieXHipHop1" = "blue"))#
+#
+## Liking#
+#
+# Mittelwert Berechnung#
+daten$mean_Liking_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Liking1_RelativeSize_MinXHippie2_outfits", "Liking2_RelativeSize_MinXHippie2_outfits", "Liking3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Abgrenzung_HipHopXMin2 <- rowMeans(daten[, c("Liking1_Abgrenzung_HipHopXMin2_outfits", "Liking2_Abgrenzung_HipHopXMin2_outfits", "Liking3_Abgrenzung_HipHopXMin2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Liking1_Zentralität_MinXHippie2_outfits", "Liking2_Zentralität_MinXHippie2_outfits", "Liking3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Liking1_RelativeSize_HippieXHipHop1_outfits", "Liking2_RelativeSize_HippieXHipHop1_outfits", "Liking3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Liking1_Abgrenzung_HipHopXMinXHippie1_outfits", "Liking2_Abgrenzung_HipHopXMinXHippie1_outfits", "Liking3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Liking1_Zentralität_MinXHippieXHipHop1_outfits", "Liking2_Zentralität_MinXHippieXHipHop1_outfits", "Liking3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_liking <- daten %>%#
+  pivot_longer(cols = c("mean_Liking_RelativeSize_MinXHippie2", "mean_Liking_Abgrenzung_HipHopXMin2", "mean_Liking_Zentralität_MinXHippie2", "mean_Liking_RelativeSize_HippieXHipHop1", "mean_Liking_Abgrenzung_HipHopXMinXHippie1", "mean_Liking_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Liking")#
+#
+# Boxplots für Liking#
+ggplot(daten_long_liking, aes(x = Outfit_Type, y = Mean_Liking, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Liking", y = "Mean Liking", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Liking_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Liking_Abgrenzung_HipHopXMin2" = "#00CED1", #
+                               "mean_Liking_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Liking_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Liking_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Liking_Zentralität_MinXHippieXHipHop1" = "blue"))
+ls
+cd ..
+cd
+#laden der datei#
+daten <- /Users/antonbadrak/Documents/Uni/MaFo/pretest_data.csv()#
+#
+#Laden der Pakete#
+library(tidyr)#
+install.packages("ggplot2")#
+library(ggplot2)#
+library(dplyr)#
+#
+###Mittelwerte und Boxplots#
+#
+  ##Wertigkeit#
+#
+    #Mittelwert Berechnung#
+daten$mean_Wertigkeit_HipHop1 <- rowMeans(daten[, c("Wertigkeit1_HipHop1_outfits", "Wertigkeit2_HipHop1_outfits", "Wertigkeit3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Min1 <- rowMeans(daten[, c("Wertigkeit1_Min1_outfits", "Wertigkeit2_Min1_outfits", "Wertigkeit3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Hippie1 <- rowMeans(daten[, c("Wertigkeit1_Hippie1_outfits", "Wertigkeit2_Hippie1_outfits", "Wertigkeit3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_HipHop2 <- rowMeans(daten[, c("Wertigkeit1_HipHop2_outfits", "Wertigkeit2_HipHop2_outfits", "Wertigkeit3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Min2 <- rowMeans(daten[, c("Wertigkeit1_Min2_outfits", "Wertigkeit2_Min2_outfits", "Wertigkeit3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Hippie2 <- rowMeans(daten[, c("Wertigkeit1_Hippie2_outfits", "Wertigkeit2_Hippie2_outfits", "Wertigkeit3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_wertigkeit <- daten %>%#
+  pivot_longer(cols = c("mean_Wertigkeit_HipHop1", "mean_Wertigkeit_Min1", "mean_Wertigkeit_Hippie1", "mean_Wertigkeit_HipHop2", "mean_Wertigkeit_Min2", "mean_Wertigkeit_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Wertigkeit")#
+#
+    #Boxplots für Wertigkeit#
+ggplot(daten_long_wertigkeit, aes(x = Outfit_Type, y = Mean_Wertigkeit, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Wertigkeit", y = "Mean Wertigkeit", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Wertigkeit_HipHop1" = "grey", #
+                               "mean_Wertigkeit_Min1" = "#00CED1", #
+                               "mean_Wertigkeit_Hippie1" = "lightblue",#
+                               "mean_Wertigkeit_HipHop2" = "darkgrey",#
+                               "mean_Wertigkeit_Min2" = "darkturquoise",#
+                               "mean_Wertigkeit_Hippie2" = "blue"))#
+#
+  ##Konsistenz#
+#
+    #Mittelwert Berechnung#
+daten$mean_Konsistenz_HipHop1 <- rowMeans(daten[, c("Konsistenz1_HipHop1_outfits", "Konsistenz2_HipHop1_outfits", "Konsistenz3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min1 <- rowMeans(daten[, c("Konsistenz1_Min1_outfits", "Konsistenz2_Min1_outfits", "Konsistenz3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Hippie1 <- rowMeans(daten[, c("Konsistenz1_Hippie1_outfits", "Konsistenz2_Hippie1_outfits", "Konsistenz3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_HipHop2 <- rowMeans(daten[, c("Konsistenz1_HipHop2_outfits", "Konsistenz2_HipHop2_outfits", "Konsistenz3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min2 <- rowMeans(daten[, c("Konsistenz1_Min2_outfits", "Konsistenz2_Min2_outfits", "Konsistenz3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Hippie2 <- rowMeans(daten[, c("Konsistenz1_Hippie2_outfits", "Konsistenz2_Hippie2_outfits", "Konsistenz3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_konsistenz <- daten %>%#
+  pivot_longer(cols = c("mean_Konsistenz_HipHop1", "mean_Konsistenz_Min1", "mean_Konsistenz_Hippie1", "mean_Konsistenz_HipHop2", "mean_Konsistenz_Min2", "mean_Konsistenz_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Konsistenz")#
+#
+    #Boxplots für Konsistenz#
+ggplot(daten_long_konsistenz, aes(x = Outfit_Type, y = Mean_Konsistenz, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Konsistenz", y = "Mean Konsistenz", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Konsistenz_HipHop1" = "grey", #
+                               "mean_Konsistenz_Min1" = "#00CED1", #
+                               "mean_Konsistenz_Hippie1" = "lightblue",#
+                               "mean_Konsistenz_HipHop2" = "darkgrey",#
+                               "mean_Konsistenz_Min2" = "darkturquoise",#
+                               "mean_Konsistenz_Hippie2" = "blue"))#
+#
+  ##Liking#
+#
+    #Mittelwert Berechnung#
+daten$mean_Liking_HipHop1 <- rowMeans(daten[, c("Liking1_HipHop1_outfits", "Liking2_HipHop1_outfits", "Liking3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Min1 <- rowMeans(daten[, c("Liking1_Min1_outfits", "Liking2_Min1_outfits", "Liking3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Hippie1 <- rowMeans(daten[, c("Liking1_Hippie1_outfits", "Liking2_Hippie1_outfits", "Liking3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_HipHop2 <- rowMeans(daten[, c("Liking1_HipHop2_outfits", "Liking2_HipHop2_outfits", "Liking3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Min2 <- rowMeans(daten[, c("Liking1_Min2_outfits", "Liking2_Min2_outfits", "Liking3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Hippie2 <- rowMeans(daten[, c("Liking1_Hippie2_outfits", "Liking2_Hippie2_outfits", "Liking3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_liking <- daten %>%#
+  pivot_longer(cols = c("mean_Liking_HipHop1", "mean_Liking_Min1", "mean_Liking_Hippie1", "mean_Liking_HipHop2", "mean_Liking_Min2", "mean_Liking_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Liking")#
+#
+    #Boxplots für Liking#
+ggplot(daten_long_liking, aes(x = Outfit_Type, y = Mean_Liking, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Liking", y = "Mean Liking", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Liking_HipHop1" = "grey", #
+                               "mean_Liking_Min1" = "#00CED1", #
+                               "mean_Liking_Hippie1" = "lightblue",#
+                               "mean_Liking_HipHop2" = "darkgrey",#
+                               "mean_Liking_Min2" = "darkturquoise",#
+                               "mean_Liking_Hippie2" = "blue"))#
+###Gemischte Outfits#
+## Wertigkeit#
+#
+# Mittelwert Berechnung#
+daten$mean_Wertigkeit_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Wertigkeit1_RelativeSize_MinXHippie2_outfits", "Wertigkeit2_RelativeSize_MinXHippie2_outfits", "Wertigkeit3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Abgrenzung_HipHopXMin2 <- rowMeans(daten[, c("Wertigkeit1_Abgrenzung_HipHopXMin2_outfits", "Wertigkeit2_Abgrenzung_HipHopXMin2_outfits", "Wertigkeit3_Abgrenzung_HipHopXMin2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Wertigkeit1_Zentralität_MinXHippie2_outfits", "Wertigkeit2_Zentralität_MinXHippie2_outfits", "Wertigkeit3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Wertigkeit1_RelativeSize_HippieXHipHop1_outfits", "Wertigkeit2_RelativeSize_HippieXHipHop1_outfits", "Wertigkeit3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Wertigkeit1_Abgrenzung_HipHopXMinXHippie1_outfits", "Wertigkeit2_Abgrenzung_HipHopXMinXHippie1_outfits", "Wertigkeit3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Wertigkeit1_Zentralität_MinXHippieXHipHop1_outfits", "Wertigkeit2_Zentralität_MinXHippieXHipHop1_outfits", "Wertigkeit3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_wertigkeit <- daten %>%#
+  pivot_longer(cols = c("mean_Wertigkeit_RelativeSize_MinXHippie2", "mean_Wertigkeit_Abgrenzung_HipHopXMin2", "mean_Wertigkeit_Zentralität_MinXHippie2", "mean_Wertigkeit_RelativeSize_HippieXHipHop1", "mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1", "mean_Wertigkeit_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Wertigkeit")#
+#
+# Boxplots für Wertigkeit#
+ggplot(daten_long_wertigkeit, aes(x = Outfit_Type, y = Mean_Wertigkeit, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Wertigkeit", y = "Mean Wertigkeit", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Wertigkeit_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Wertigkeit_Abgrenzung_HipHopXMin2" = "#00CED1", #
+                               "mean_Wertigkeit_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Wertigkeit_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Wertigkeit_Zentralität_MinXHippieXHipHop1" = "blue"))#
+#
+## Konsistenz#
+#
+# Mittelwert Berechnung#
+daten$mean_Konsistenz_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Konsistenz1_RelativeSize_MinXHippie2_outfits", "Konsistenz2_RelativeSize_MinXHippie2_outfits", "Konsistenz3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min1 <- rowMeans(daten[, c("Konsistenz1_Min1_outfits", "Konsistenz2_Min1_outfits", "Konsistenz3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Konsistenz1_Zentralität_MinXHippie2_outfits", "Konsistenz2_Zentralität_MinXHippie2_outfits", "Konsistenz3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Konsistenz1_RelativeSize_HippieXHipHop1_outfits", "Konsistenz2_RelativeSize_HippieXHipHop1_outfits", "Konsistenz3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Konsistenz1_Abgrenzung_HipHopXMinXHippie1_outfits", "Konsistenz2_Abgrenzung_HipHopXMinXHippie1_outfits", "Konsistenz3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Konsistenz1_Zentralität_MinXHippieXHipHop1_outfits", "Konsistenz2_Zentralität_MinXHippieXHipHop1_outfits", "Konsistenz3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_konsistenz <- daten %>%#
+  pivot_longer(cols = c("mean_Konsistenz_RelativeSize_MinXHippie2", "mean_Konsistenz_Min1", "mean_Konsistenz_Zentralität_MinXHippie2", "mean_Konsistenz_RelativeSize_HippieXHipHop1", "mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1", "mean_Konsistenz_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Konsistenz")#
+#
+# Boxplots für Konsistenz#
+ggplot(daten_long_konsistenz, aes(x = Outfit_Type, y = Mean_Konsistenz, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Konsistenz", y = "Mean Konsistenz", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Konsistenz_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Konsistenz_Min1" = "#00CED1", #
+                               "mean_Konsistenz_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Konsistenz_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Konsistenz_Zentralität_MinXHippieXHipHop1" = "blue"))#
+#
+## Liking#
+#
+# Mittelwert Berechnung#
+daten$mean_Liking_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Liking1_RelativeSize_MinXHippie2_outfits", "Liking2_RelativeSize_MinXHippie2_outfits", "Liking3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Abgrenzung_HipHopXMin2 <- rowMeans(daten[, c("Liking1_Abgrenzung_HipHopXMin2_outfits", "Liking2_Abgrenzung_HipHopXMin2_outfits", "Liking3_Abgrenzung_HipHopXMin2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Liking1_Zentralität_MinXHippie2_outfits", "Liking2_Zentralität_MinXHippie2_outfits", "Liking3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Liking1_RelativeSize_HippieXHipHop1_outfits", "Liking2_RelativeSize_HippieXHipHop1_outfits", "Liking3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Liking1_Abgrenzung_HipHopXMinXHippie1_outfits", "Liking2_Abgrenzung_HipHopXMinXHippie1_outfits", "Liking3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Liking1_Zentralität_MinXHippieXHipHop1_outfits", "Liking2_Zentralität_MinXHippieXHipHop1_outfits", "Liking3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_liking <- daten %>%#
+  pivot_longer(cols = c("mean_Liking_RelativeSize_MinXHippie2", "mean_Liking_Abgrenzung_HipHopXMin2", "mean_Liking_Zentralität_MinXHippie2", "mean_Liking_RelativeSize_HippieXHipHop1", "mean_Liking_Abgrenzung_HipHopXMinXHippie1", "mean_Liking_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Liking")#
+#
+# Boxplots für Liking#
+ggplot(daten_long_liking, aes(x = Outfit_Type, y = Mean_Liking, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Liking", y = "Mean Liking", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Liking_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Liking_Abgrenzung_HipHopXMin2" = "#00CED1", #
+                               "mean_Liking_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Liking_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Liking_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Liking_Zentralität_MinXHippieXHipHop1" = "blue"))
+install.packages("tidyr")#
+install.packages("ggplot2")#
+install.packages("dplyr")#
+#
+library(tidyr)#
+library(ggplot2)#
+library(dplyr)
+#laden der datei#
+daten <- read.csv("/Users/antonbadrak/Documents/Uni/MaFo/pretest_data.csv")#
+#
+#Laden der Pakete#
+library(tidyr)#
+install.packages("ggplot2")#
+library(ggplot2)#
+library(dplyr)#
+#
+###Mittelwerte und Boxplots#
+#
+  ##Wertigkeit#
+#
+    #Mittelwert Berechnung#
+daten$mean_Wertigkeit_HipHop1 <- rowMeans(daten[, c("Wertigkeit1_HipHop1_outfits", "Wertigkeit2_HipHop1_outfits", "Wertigkeit3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Min1 <- rowMeans(daten[, c("Wertigkeit1_Min1_outfits", "Wertigkeit2_Min1_outfits", "Wertigkeit3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Hippie1 <- rowMeans(daten[, c("Wertigkeit1_Hippie1_outfits", "Wertigkeit2_Hippie1_outfits", "Wertigkeit3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_HipHop2 <- rowMeans(daten[, c("Wertigkeit1_HipHop2_outfits", "Wertigkeit2_HipHop2_outfits", "Wertigkeit3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Min2 <- rowMeans(daten[, c("Wertigkeit1_Min2_outfits", "Wertigkeit2_Min2_outfits", "Wertigkeit3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Hippie2 <- rowMeans(daten[, c("Wertigkeit1_Hippie2_outfits", "Wertigkeit2_Hippie2_outfits", "Wertigkeit3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_wertigkeit <- daten %>%#
+  pivot_longer(cols = c("mean_Wertigkeit_HipHop1", "mean_Wertigkeit_Min1", "mean_Wertigkeit_Hippie1", "mean_Wertigkeit_HipHop2", "mean_Wertigkeit_Min2", "mean_Wertigkeit_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Wertigkeit")#
+#
+    #Boxplots für Wertigkeit#
+ggplot(daten_long_wertigkeit, aes(x = Outfit_Type, y = Mean_Wertigkeit, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Wertigkeit", y = "Mean Wertigkeit", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Wertigkeit_HipHop1" = "grey", #
+                               "mean_Wertigkeit_Min1" = "#00CED1", #
+                               "mean_Wertigkeit_Hippie1" = "lightblue",#
+                               "mean_Wertigkeit_HipHop2" = "darkgrey",#
+                               "mean_Wertigkeit_Min2" = "darkturquoise",#
+                               "mean_Wertigkeit_Hippie2" = "blue"))#
+#
+  ##Konsistenz#
+#
+    #Mittelwert Berechnung#
+daten$mean_Konsistenz_HipHop1 <- rowMeans(daten[, c("Konsistenz1_HipHop1_outfits", "Konsistenz2_HipHop1_outfits", "Konsistenz3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min1 <- rowMeans(daten[, c("Konsistenz1_Min1_outfits", "Konsistenz2_Min1_outfits", "Konsistenz3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Hippie1 <- rowMeans(daten[, c("Konsistenz1_Hippie1_outfits", "Konsistenz2_Hippie1_outfits", "Konsistenz3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_HipHop2 <- rowMeans(daten[, c("Konsistenz1_HipHop2_outfits", "Konsistenz2_HipHop2_outfits", "Konsistenz3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min2 <- rowMeans(daten[, c("Konsistenz1_Min2_outfits", "Konsistenz2_Min2_outfits", "Konsistenz3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Hippie2 <- rowMeans(daten[, c("Konsistenz1_Hippie2_outfits", "Konsistenz2_Hippie2_outfits", "Konsistenz3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_konsistenz <- daten %>%#
+  pivot_longer(cols = c("mean_Konsistenz_HipHop1", "mean_Konsistenz_Min1", "mean_Konsistenz_Hippie1", "mean_Konsistenz_HipHop2", "mean_Konsistenz_Min2", "mean_Konsistenz_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Konsistenz")#
+#
+    #Boxplots für Konsistenz#
+ggplot(daten_long_konsistenz, aes(x = Outfit_Type, y = Mean_Konsistenz, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Konsistenz", y = "Mean Konsistenz", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Konsistenz_HipHop1" = "grey", #
+                               "mean_Konsistenz_Min1" = "#00CED1", #
+                               "mean_Konsistenz_Hippie1" = "lightblue",#
+                               "mean_Konsistenz_HipHop2" = "darkgrey",#
+                               "mean_Konsistenz_Min2" = "darkturquoise",#
+                               "mean_Konsistenz_Hippie2" = "blue"))#
+#
+  ##Liking#
+#
+    #Mittelwert Berechnung#
+daten$mean_Liking_HipHop1 <- rowMeans(daten[, c("Liking1_HipHop1_outfits", "Liking2_HipHop1_outfits", "Liking3_HipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Min1 <- rowMeans(daten[, c("Liking1_Min1_outfits", "Liking2_Min1_outfits", "Liking3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Hippie1 <- rowMeans(daten[, c("Liking1_Hippie1_outfits", "Liking2_Hippie1_outfits", "Liking3_Hippie1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_HipHop2 <- rowMeans(daten[, c("Liking1_HipHop2_outfits", "Liking2_HipHop2_outfits", "Liking3_HipHop2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Min2 <- rowMeans(daten[, c("Liking1_Min2_outfits", "Liking2_Min2_outfits", "Liking3_Min2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Hippie2 <- rowMeans(daten[, c("Liking1_Hippie2_outfits", "Liking2_Hippie2_outfits", "Liking3_Hippie2_outfits")], na.rm = TRUE)#
+#
+    #Daten in langes Format bringen#
+daten_long_liking <- daten %>%#
+  pivot_longer(cols = c("mean_Liking_HipHop1", "mean_Liking_Min1", "mean_Liking_Hippie1", "mean_Liking_HipHop2", "mean_Liking_Min2", "mean_Liking_Hippie2"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Liking")#
+#
+    #Boxplots für Liking#
+ggplot(daten_long_liking, aes(x = Outfit_Type, y = Mean_Liking, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Liking", y = "Mean Liking", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Liking_HipHop1" = "grey", #
+                               "mean_Liking_Min1" = "#00CED1", #
+                               "mean_Liking_Hippie1" = "lightblue",#
+                               "mean_Liking_HipHop2" = "darkgrey",#
+                               "mean_Liking_Min2" = "darkturquoise",#
+                               "mean_Liking_Hippie2" = "blue"))#
+###Gemischte Outfits#
+## Wertigkeit#
+#
+# Mittelwert Berechnung#
+daten$mean_Wertigkeit_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Wertigkeit1_RelativeSize_MinXHippie2_outfits", "Wertigkeit2_RelativeSize_MinXHippie2_outfits", "Wertigkeit3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Abgrenzung_HipHopXMin2 <- rowMeans(daten[, c("Wertigkeit1_Abgrenzung_HipHopXMin2_outfits", "Wertigkeit2_Abgrenzung_HipHopXMin2_outfits", "Wertigkeit3_Abgrenzung_HipHopXMin2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Wertigkeit1_Zentralität_MinXHippie2_outfits", "Wertigkeit2_Zentralität_MinXHippie2_outfits", "Wertigkeit3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Wertigkeit1_RelativeSize_HippieXHipHop1_outfits", "Wertigkeit2_RelativeSize_HippieXHipHop1_outfits", "Wertigkeit3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Wertigkeit1_Abgrenzung_HipHopXMinXHippie1_outfits", "Wertigkeit2_Abgrenzung_HipHopXMinXHippie1_outfits", "Wertigkeit3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Wertigkeit_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Wertigkeit1_Zentralität_MinXHippieXHipHop1_outfits", "Wertigkeit2_Zentralität_MinXHippieXHipHop1_outfits", "Wertigkeit3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_wertigkeit <- daten %>%#
+  pivot_longer(cols = c("mean_Wertigkeit_RelativeSize_MinXHippie2", "mean_Wertigkeit_Abgrenzung_HipHopXMin2", "mean_Wertigkeit_Zentralität_MinXHippie2", "mean_Wertigkeit_RelativeSize_HippieXHipHop1", "mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1", "mean_Wertigkeit_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Wertigkeit")#
+#
+# Boxplots für Wertigkeit#
+ggplot(daten_long_wertigkeit, aes(x = Outfit_Type, y = Mean_Wertigkeit, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Wertigkeit", y = "Mean Wertigkeit", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Wertigkeit_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Wertigkeit_Abgrenzung_HipHopXMin2" = "#00CED1", #
+                               "mean_Wertigkeit_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Wertigkeit_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Wertigkeit_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Wertigkeit_Zentralität_MinXHippieXHipHop1" = "blue"))#
+#
+## Konsistenz#
+#
+# Mittelwert Berechnung#
+daten$mean_Konsistenz_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Konsistenz1_RelativeSize_MinXHippie2_outfits", "Konsistenz2_RelativeSize_MinXHippie2_outfits", "Konsistenz3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Min1 <- rowMeans(daten[, c("Konsistenz1_Min1_outfits", "Konsistenz2_Min1_outfits", "Konsistenz3_Min1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Konsistenz1_Zentralität_MinXHippie2_outfits", "Konsistenz2_Zentralität_MinXHippie2_outfits", "Konsistenz3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Konsistenz1_RelativeSize_HippieXHipHop1_outfits", "Konsistenz2_RelativeSize_HippieXHipHop1_outfits", "Konsistenz3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Konsistenz1_Abgrenzung_HipHopXMinXHippie1_outfits", "Konsistenz2_Abgrenzung_HipHopXMinXHippie1_outfits", "Konsistenz3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Konsistenz_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Konsistenz1_Zentralität_MinXHippieXHipHop1_outfits", "Konsistenz2_Zentralität_MinXHippieXHipHop1_outfits", "Konsistenz3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_konsistenz <- daten %>%#
+  pivot_longer(cols = c("mean_Konsistenz_RelativeSize_MinXHippie2", "mean_Konsistenz_Min1", "mean_Konsistenz_Zentralität_MinXHippie2", "mean_Konsistenz_RelativeSize_HippieXHipHop1", "mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1", "mean_Konsistenz_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Konsistenz")#
+#
+# Boxplots für Konsistenz#
+ggplot(daten_long_konsistenz, aes(x = Outfit_Type, y = Mean_Konsistenz, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Konsistenz", y = "Mean Konsistenz", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Konsistenz_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Konsistenz_Min1" = "#00CED1", #
+                               "mean_Konsistenz_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Konsistenz_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Konsistenz_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Konsistenz_Zentralität_MinXHippieXHipHop1" = "blue"))#
+#
+## Liking#
+#
+# Mittelwert Berechnung#
+daten$mean_Liking_RelativeSize_MinXHippie2 <- rowMeans(daten[, c("Liking1_RelativeSize_MinXHippie2_outfits", "Liking2_RelativeSize_MinXHippie2_outfits", "Liking3_RelativeSize_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Abgrenzung_HipHopXMin2 <- rowMeans(daten[, c("Liking1_Abgrenzung_HipHopXMin2_outfits", "Liking2_Abgrenzung_HipHopXMin2_outfits", "Liking3_Abgrenzung_HipHopXMin2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Zentralität_MinXHippie2 <- rowMeans(daten[, c("Liking1_Zentralität_MinXHippie2_outfits", "Liking2_Zentralität_MinXHippie2_outfits", "Liking3_Zentralität_MinXHippie2_outfits")], na.rm = TRUE)#
+daten$mean_Liking_RelativeSize_HippieXHipHop1 <- rowMeans(daten[, c("Liking1_RelativeSize_HippieXHipHop1_outfits", "Liking2_RelativeSize_HippieXHipHop1_outfits", "Liking3_RelativeSize_HippieXHipHop1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Abgrenzung_HipHopXMinXHippie1 <- rowMeans(daten[, c("Liking1_Abgrenzung_HipHopXMinXHippie1_outfits", "Liking2_Abgrenzung_HipHopXMinXHippie1_outfits", "Liking3_Abgrenzung_HipHopXMinXHippie1_outfits")], na.rm = TRUE)#
+daten$mean_Liking_Zentralität_MinXHippieXHipHop1 <- rowMeans(daten[, c("Liking1_Zentralität_MinXHippieXHipHop1_outfits", "Liking2_Zentralität_MinXHippieXHipHop1_outfits", "Liking3_Zentralität_MinXHippieXHipHop1_outfits")], na.rm = TRUE)#
+#
+# Daten in langes Format bringen#
+daten_long_liking <- daten %>%#
+  pivot_longer(cols = c("mean_Liking_RelativeSize_MinXHippie2", "mean_Liking_Abgrenzung_HipHopXMin2", "mean_Liking_Zentralität_MinXHippie2", "mean_Liking_RelativeSize_HippieXHipHop1", "mean_Liking_Abgrenzung_HipHopXMinXHippie1", "mean_Liking_Zentralität_MinXHippieXHipHop1"), #
+               names_to = "Outfit_Type", #
+               values_to = "Mean_Liking")#
+#
+# Boxplots für Liking#
+ggplot(daten_long_liking, aes(x = Outfit_Type, y = Mean_Liking, fill = Outfit_Type)) +#
+  geom_boxplot() +#
+  labs(title = "Liking", y = "Mean Liking", x = "Outfit Typ") +#
+  theme_minimal() +#
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +#
+  scale_fill_manual(values = c("mean_Liking_RelativeSize_MinXHippie2" = "grey", #
+                               "mean_Liking_Abgrenzung_HipHopXMin2" = "#00CED1", #
+                               "mean_Liking_Zentralität_MinXHippie2" = "lightblue",#
+                               "mean_Liking_RelativeSize_HippieXHipHop1" = "darkgrey",#
+                               "mean_Liking_Abgrenzung_HipHopXMinXHippie1" = "darkturquoise",#
+                               "mean_Liking_Zentralität_MinXHippieXHipHop1" = "blue"))
+cd
+cd /Users/antonbadrak/Documents/Uni/SCA SoSe 25/Case Study/Case Study/DispositionAnalysis
+cd "/Users/antonbadrak/Documents/Uni/SCA SoSe 25/Case Study/Case Study/DispositionAnalysis"
+setwd("/Users/antonbadrak/Documents/Uni/SCA SoSe 25/Case Study/Case Study/DispositionAnalysis")
+setwd("/Users/antonbadrak/Documents/Uni/SCA SoSe 25/Case Study/Case Study/DispositionAnalysis")file.exists("kpi/ifr_helpers.R")
+file.exists("kpi/ifr_helpers.R")
+# Helper manuell laden und prüfen#
+source("kpi/ifr_helpers.R")#
+ls(pattern = "get_ifr_details")
+shiny::runApp(".")
