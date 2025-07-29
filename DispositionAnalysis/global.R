@@ -200,4 +200,4 @@ avg_otd <- {
 ## 3) alle KPI-Funktionsdateien sourcen
 source(file.path("kpi", "ifr_helpers.R"))
 lapply(list.files("kpi", "^calculate_.*\\.R$", full.names = TRUE), source)
-
+source(file.path("kpi", "timeline_delay.R"))

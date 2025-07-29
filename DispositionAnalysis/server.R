@@ -92,12 +92,18 @@ shinyServer(function(input, output, session) {
       ifr_reco  = ifr_det$recommendation,
       ifr_box   = ifr_det$boxplot_vec,
       ifr_time  = ifr_det$timeline_tbl,
-      ifr_avg   = ifr_det$avg_ifr_all, 
-      
+      ifr_avg   = ifr_det$avg_ifr_all,
+      ifr_best  = max(ifr_det$boxplot_vec, na.rm = TRUE),
+      ifr_worst = min(ifr_det$boxplot_vec, na.rm = TRUE),
       
       otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
-      oct  = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
-      delay = calculate_mean_delay(input$material, orders)
+      oct   = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
+      delay = calculate_mean_delay(input$material, orders, EKET, EKES, po_filter = po_keys),
+      otd_company   = calculate_otdr_company(orders, EKET, EKES, po_filter = po_keys),
+      delay_company = calculate_mean_delay_company(orders, EKET, EKES, po_filter = po_keys),
+      worst_delay   = calculate_worst_delay(input$material, orders, EKET, EKES, po_filter = po_keys),
+      delay_box     = boxplot_delay(input$material, orders, EKET, EKES, po_filter = po_keys),
+      delay_time    = timeline_delay(input$material, orders, EKET, EKES, po_filter = po_keys)
     )
   })
   
@@ -120,11 +126,24 @@ shinyServer(function(input, output, session) {
             ylab = "IFR %")
   })
   
+  output$otd_boxplot <- renderPlot({
+    kpi_vals()$delay_box
+  })
+  
   output$ifr_timeline <- renderPlot({
     df <- kpi_vals()$ifr_time
     ggplot(df, aes(x = Lieferdatum, y = ifr_line)) +
       geom_line() + geom_point() +
       labs(title = "IFR-Zeitreihe", y = "IFR %", x = "Lieferdatum") +
+      theme_minimal()
+  })
+  
+  output$otd_timeline <- renderPlot({
+    df <- kpi_vals()$delay_time
+    if (is.null(df)) return(NULL)
+    ggplot(df, aes(x = Lieferdatum, y = delay_days)) +
+      geom_line() + geom_point() +
+      labs(title = "Delay Timeline", y = "Delay (days)", x = "Lieferdatum") +
       theme_minimal()
   })
   
@@ -212,13 +231,18 @@ shinyServer(function(input, output, session) {
                        label = if (new_state == "box") "Timeline" else "Variation")
   })
   
-  # Dynamic placeholder for boxplot/timeplot text
+  # Dynamic plot output depending on selected KPI and state
   output$kpi_plot <- renderUI({
-    if (plot_state() == "box") {
-      div(style = "text-align: center; font-size: 24px; padding: 100px 0;", "Boxplot")
+    kpi <- selected_kpi()
+    if (is.null(kpi)) return(NULL)
+    
+    plot_id <- if (kpi == "Item Fill Rate") {
+      if (plot_state() == "box") "ifr_boxplot" else "ifr_timeline"
     } else {
-      div(style = "text-align: center; font-size: 24px; padding: 100px 0;", "Timeplot")
+      if (plot_state() == "box") "otd_boxplot" else "otd_timeline"
     }
+    
+    plotOutput(plot_id)
   })
   
   
@@ -229,17 +253,35 @@ shinyServer(function(input, output, session) {
     # Left content
     left_col <- switch(kpi,
                        "Item Fill Rate" = column(6,
-                                                 div(style = "font-size: 20px; padding: 7px 0;", "Item Fill Rate of the Product on average: ", "Output here"),
-                                                 div(style = "font-size: 20px; padding: 7px 0;", "Item Fill Rate of the Company on average: ", "Output here"),
-                                                 div(style = "font-size: 20px; padding: 7px 0;", "Worst Item Fill Rate of the Product: ", "Output here"),
-                                                 div(style = "font-size: 20px; padding: 7px 0;", "Best Item Fill Rate of the Product: ", "Output here")
+                                                 div(style = "font-size: 20px; padding: 7px 0;",
+                                                     "Item Fill Rate of the Product on average: ",
+                                                     sprintf("%.1f %%", kpi_vals()$ifr_value)),
+                                                 div(style = "font-size: 20px; padding: 7px 0;",
+                                                     "Item Fill Rate of the Company on average: ",
+                                                     sprintf("%.1f %%", kpi_vals()$ifr_avg)),
+                                                 div(style = "font-size: 20px; padding: 7px 0;",
+                                                     "Worst Item Fill Rate of the Product: ",
+                                                     sprintf("%.1f %%", kpi_vals()$ifr_worst)),
+                                                 div(style = "font-size: 20px; padding: 7px 0;",
+                                                     "Best Item Fill Rate of the Product: ",
+                                                     sprintf("%.1f %%", kpi_vals()$ifr_best))
                        ),
                        "On-Time Delivery" = column(6,
-                                                   div(style = "font-size: 20px; padding: 5px 0;", "On Time Delivery Rate of the Product on average: ", "Output here"),
-                                                   div(style = "font-size: 20px; padding: 5px 0;", "On Time Delivery Rate of the Company on average: ", "Output here"),
-                                                   div(style = "font-size: 20px; padding: 5px 0;", "Mean Delay of the Product on average: ", "Output here"),
-                                                   div(style = "font-size: 20px; padding: 5px 0;", "Mean Delay Delivery Rate of the Company on average: ", "Output here"),
-                                                   div(style = "font-size: 20px; padding: 5px 0;", "Worst Delay of the Product: ", "Output here")
+                                                   div(style = "font-size: 20px; padding: 5px 0;",
+                                                       "On Time Delivery Rate of the Product on average: ",
+                                                       sprintf("%.1f %%", kpi_vals()$otdr * 100)),
+                                                   div(style = "font-size: 20px; padding: 5px 0;",
+                                                       "On Time Delivery Rate of the Company on average: ",
+                                                       sprintf("%.1f %%", kpi_vals()$otd_company * 100)),
+                                                   div(style = "font-size: 20px; padding: 5px 0;",
+                                                       "Mean Delay of the Product on average: ",
+                                                       sprintf("%.1f d", kpi_vals()$delay)),
+                                                   div(style = "font-size: 20px; padding: 5px 0;",
+                                                       "Mean Delay Delivery Rate of the Company on average: ",
+                                                       sprintf("%.1f d", kpi_vals()$delay_company)),
+                                                   div(style = "font-size: 20px; padding: 5px 0;",
+                                                       "Worst Delay of the Product: ",
+                                                       sprintf("%.1f d", kpi_vals()$worst_delay))
                        ),
                        column(6, div("Unknown KPI"))
     )
