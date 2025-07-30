@@ -173,7 +173,7 @@ shinyServer(function(input, output, session) {
   }
   
   ## Durchschnittswerte einmalig aus kpi_vals()
-  avg_ifr <- reactive(kpi_vals()$avg_ifr_all)            # kommt aus get_ifr_details
+  avg_ifr <- reactive(kpi_vals()$ifr_avg)            # kommt aus get_ifr_details
   avg_otd <- reactive(mean(kpi_vals()$otdr * 100, na.rm = TRUE))  # Beispiel
   
   selected_kpi  <- reactiveVal(NULL)
