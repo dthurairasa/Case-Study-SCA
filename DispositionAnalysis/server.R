@@ -86,6 +86,12 @@ shinyServer(function(input, output, session) {
       min_up_pct  = 5
     )
     
+    rr_det <- get_rr_details(
+      material_id = input$material,
+      master_df   = orders,
+      top_n       = if (isTRUE(input$use_all)) NULL else 25
+    )
+    
     list(
       ifr_value = ifr_det$item_ifr,
       ifr_flag  = ifr_det$flag,
@@ -95,6 +101,13 @@ shinyServer(function(input, output, session) {
       ifr_avg   = ifr_det$avg_ifr_all,
       ifr_best  = max(ifr_det$boxplot_vec, na.rm = TRUE),
       ifr_worst = min(ifr_det$boxplot_vec, na.rm = TRUE),
+      
+      rr_value = rr_det$item_rr,
+      rr_avg   = rr_det$avg_rr_all,
+      rr_box   = rr_det$boxplot_vec,
+      rr_time  = rr_det$timeline_tbl,
+      rr_best  = min(rr_det$boxplot_vec, na.rm = TRUE),
+      rr_worst = max(rr_det$boxplot_vec, na.rm = TRUE),
       
       otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
       oct   = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
@@ -109,6 +122,7 @@ shinyServer(function(input, output, session) {
   
   ## KPI-Cards (Text-Outputs für ui.R)
   output$kpi_ifr <- renderText(sprintf("%.1f %%", kpi_vals()$ifr_value))
+  output$kpi_rr  <- renderText(sprintf("%.1f %%", kpi_vals()$rr_value))
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
   output$kpi_oct  <- renderText( sprintf("%.1f d",  kpi_vals()$oct) )
   output$kpi_delay  <- renderText( sprintf("%.1f d",  kpi_vals()$delay) )
@@ -130,6 +144,12 @@ shinyServer(function(input, output, session) {
     kpi_vals()$delay_box
   })
   
+  output$rr_boxplot <- renderPlot({
+    boxplot(kpi_vals()$rr_box,
+            main = "Return Rate Distribution (latest orders)",
+            ylab = "Return Rate %")
+  })
+  
   output$ifr_timeline <- renderPlot({
     df <- kpi_vals()$ifr_time
     ggplot(df, aes(x = Lieferdatum, y = ifr_line)) +
@@ -144,6 +164,14 @@ shinyServer(function(input, output, session) {
     ggplot(df, aes(x = Lieferdatum, y = delay_days)) +
       geom_line() + geom_point() +
       labs(title = "Delay Timeline", y = "Delay (days)", x = "Lieferdatum") +
+      theme_minimal()
+  })
+  
+  output$rr_timeline <- renderPlot({
+    df <- kpi_vals()$rr_time
+    ggplot(df, aes(x = Lieferdatum, y = rr_line)) +
+      geom_line() + geom_point() +
+      labs(title = "Return Rate Timeline", y = "Return Rate %", x = "Lieferdatum") +
       theme_minimal()
   })
   
@@ -175,6 +203,7 @@ shinyServer(function(input, output, session) {
   ## Durchschnittswerte einmalig aus kpi_vals()
   avg_ifr <- reactive(kpi_vals()$ifr_avg)            # kommt aus get_ifr_details
   avg_otd <- reactive(mean(kpi_vals()$otdr * 100, na.rm = TRUE))  # Beispiel
+  avg_rr  <- reactive(kpi_vals()$rr_avg)
   
   selected_kpi  <- reactiveVal(NULL)
   selected_rule <- reactiveVal(NULL)
@@ -191,6 +220,21 @@ shinyServer(function(input, output, session) {
     }
     
     selected_kpi("Item Fill Rate")
+    selected_rule(info$desc)
+    session$sendCustomMessage("update-bar-color", info$color)
+  })
+  
+  observeEvent(input$kpi_rr, {
+    value <- kpi_vals()$rr_value
+    avg   <- avg_rr()
+    
+    if (is.numeric(value) && is.numeric(avg)) {
+      info <- get_color_info(value, avg)
+    } else {
+      info <- list(color = kpi_colors$grey, desc = "value or average is not available")
+    }
+    
+    selected_kpi("Return Rate")
     selected_rule(info$desc)
     session$sendCustomMessage("update-bar-color", info$color)
   })
@@ -238,6 +282,8 @@ shinyServer(function(input, output, session) {
     
     plot_id <- if (kpi == "Item Fill Rate") {
       if (plot_state() == "box") "ifr_boxplot" else "ifr_timeline"
+    } else if (kpi == "Return Rate") {
+      if (plot_state() == "box") "rr_boxplot" else "rr_timeline"
     } else {
       if (plot_state() == "box") "otd_boxplot" else "otd_timeline"
     }
@@ -265,6 +311,20 @@ shinyServer(function(input, output, session) {
                                                  div(style = "font-size: 20px; padding: 7px 0;",
                                                      "Best Item Fill Rate of the Product: ",
                                                      sprintf("%.1f %%", kpi_vals()$ifr_best))
+                       ),
+                       "Return Rate" = column(6,
+                                              div(style = "font-size: 20px; padding: 7px 0;",
+                                                  "Return Rate of the Product on average: ",
+                                                  sprintf("%.1f %%", kpi_vals()$rr_value)),
+                                              div(style = "font-size: 20px; padding: 7px 0;",
+                                                  "Return Rate of the Company on average: ",
+                                                  sprintf("%.1f %%", kpi_vals()$rr_avg)),
+                                              div(style = "font-size: 20px; padding: 7px 0;",
+                                                  "Worst Return Rate of the Product: ",
+                                                  sprintf("%.1f %%", kpi_vals()$rr_worst)),
+                                              div(style = "font-size: 20px; padding: 7px 0;",
+                                                  "Best Return Rate of the Product: ",
+                                                  sprintf("%.1f %%", kpi_vals()$rr_best))
                        ),
                        "On-Time Delivery" = column(6,
                                                    div(style = "font-size: 20px; padding: 5px 0;",

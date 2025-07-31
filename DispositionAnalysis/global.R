@@ -197,7 +197,16 @@ avg_otd <- {
   }
 }
 
+avg_rr <- with(orders, {
+  if (sum(goods_receipt_qty, na.rm = TRUE) > 0) {
+    sum(return_qty, na.rm = TRUE) / sum(goods_receipt_qty, na.rm = TRUE) * 100
+  } else {
+    NA_real_
+  }
+})
+
 ## 3) alle KPI-Funktionsdateien sourcen
 source(file.path("kpi", "ifr_helpers.R"))
+source(file.path("kpi", "rr_helpers.R"))
 lapply(list.files("kpi", "^calculate_.*\\.R$", full.names = TRUE), source)
 source(file.path("kpi", "timeline_delay.R"))
