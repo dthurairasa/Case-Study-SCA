@@ -95,38 +95,14 @@ shinyUI(fluidPage(
       style = "margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; display: flex; gap: 10px;",
       
       # Single button for IFR
-      actionButton("kpi_ifr", label = div(
-        class = "kpi-card",
-        div(class = "kpi-logo", img(src = "IFR.png", height = 60)),
-        div(class = "kpi-number", textOutput("kpi_ifr")),
-        div(class = "kpi-name", "Item Fill Rate")
-      ),
-      style = "background: none; border: none; padding: 0; width: auto; text-align: left;"
-      ),
+      uiOutput("kpi_ifr_button"),
+      
+      uiOutput("kpi_rr_button"),
       
       div(style = "width: 1px; background-color: #ddd; height: auto;"),
       
       # One button wrapping the last three KPIs
-      actionButton("kpi_time", label = div(
-        style = "display: flex; gap: 10px;",
-        div(class = "kpi-card",
-            div(class = "kpi-logo", img(src = "OTD.png", height = 60)),
-            div(class = "kpi-number", textOutput("kpi_otdr")),
-            div(class = "kpi-name", "On-Time Delivery Rate")
-        ),
-        div(class = "kpi-card",
-            div(class = "kpi-logo", img(src = "OCT.png", height = 60)),
-            div(class = "kpi-number", textOutput("kpi_oct")),
-            div(class = "kpi-name", "Order Cycle Time")
-        ),
-        div(class = "kpi-card",
-            div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
-            div(class = "kpi-number", textOutput("kpi_delay")),
-            div(class = "kpi-name", "Mean Delay")
-        )
-      ),
-      style = "background: none; border: none; padding: 0; width: auto; text-align: left; display: flex;"
-      )
+      uiOutput("kpi_time_button")
   ),
   
   div(id = "info-container",
@@ -137,7 +113,10 @@ shinyUI(fluidPage(
       ),
       uiOutput("kpi_info")
   ), 
-  uiOutput("kpi_dynamic_ui")
+  uiOutput("kpi_dynamic_ui"), 
+  
+  uiOutput("kpi_result")
+  
   
 ))
 

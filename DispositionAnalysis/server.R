@@ -147,6 +147,124 @@ shinyServer(function(input, output, session) {
       theme_minimal()
   })
   
+  
+  
+  ## -------------------------------------------------
+  ## 3.5) Kpi-Cards
+  ## -------------------------------------------------
+  
+  # Background color functions
+  get_bg_color_ifr = function(value) {
+    if (value >= 98) {
+      return("#28a745")  # green
+    } else if (value >= 95) {
+      return("#ffc107")  # yellow
+    } else {
+      return("#dc3545")  # red
+    }
+  }
+  
+  get_bg_color_rr = function(value) {
+    if (value <= 2) {
+      return("#28a745")  # green
+    } else if (value <= 5) {
+      return("#ffc107")  # yellow
+    } else {
+      return("#dc3545")  # red
+    }
+  }
+  
+  get_bg_color_otd = function(value) {
+    if (value >= 95) {
+      return("#28a745")  # green
+    } else if (value >= 90) {
+      return("#ffc107")  # yellow
+    } else {
+      return("#dc3545")  # red
+    }
+  }
+  
+  get_bg_color_delay = function(value) {
+    if (value <= 1) {
+      return("#28a745")  # green
+    } else if (value <= 3) {
+      return("#ffc107")  # yellow
+    } else {
+      return("#dc3545")  # red
+    }
+  }
+  
+  output$kpi_ifr_button <- renderUI({
+    kpi_value_ifr <- kpi_vals()$ifr_value
+    bg_color_ifr <- get_bg_color_ifr(kpi_value_ifr)
+    
+    actionButton(
+      inputId = "kpi_ifr",
+      label = div(
+        class = "kpi-card",
+        style = paste("background-color:", bg_color_ifr, "; padding:15px; border-radius:8px; color:white;"),
+        div(class = "kpi-logo", img(src = "IFR.png", height = 60)),
+        div(class = "kpi-number", textOutput("kpi_ifr")),
+        div(class = "kpi-name", "Item Fill Rate")
+      ),
+      style = "background: none; border: none; padding: 0; width: auto; text-align: left;"
+    )
+  })
+  
+  output$kpi_rr_button <- renderUI({
+    
+    kpi_value_rr <- kpi_vals()$ifr_value #Change
+    bg_color_rr <- get_bg_color_ifr(kpi_value_rr)
+    
+    actionButton(
+      inputId = "kpi_rr",
+      label = div(
+        class = "kpi-card",
+        style = paste("background-color:", bg_color_rr, "; padding:15px; border-radius:8px; color:white;"),
+        div(class = "kpi-logo", img(src = "RR.png", height = 60)),
+        div(class = "kpi-number", "2%" ), #Change
+        div(class = "kpi-name", "Return Rate")
+      ),
+      style = "background: none; border: none; padding: 0; width: auto; text-align: left;"
+    )
+  })
+  
+  output$kpi_time_button <- renderUI({
+    req(kpi_vals())  # Make sure values are available
+    
+    # Extract actual values
+    otdr_val <- kpi_vals()$otdr * 100  # Convert to %
+    oct_val <- kpi_vals()$oct
+    delay_val <- kpi_vals()$delay
+    
+    # Determine background colors
+    color_otdr <- get_bg_color_otd(otdr_val)
+    color_delay <- get_bg_color_delay(delay_val)  # Example: lower delay = better
+    
+    actionButton(
+      inputId = "kpi_time",
+      label = div(
+        style = "display: flex; gap: 10px;",
+        
+        div(
+          class = "kpi-card",
+          style = paste("background-color:", color_otdr, "; padding:15px; border-radius:8px; color:white;"),
+          div(class = "kpi-logo", img(src = "OTD.png", height = 60)),
+          div(class = "kpi-number", textOutput("kpi_otdr")),
+          div(class = "kpi-name", "On-Time Delivery Rate")
+        ),
+        div(
+          class = "kpi-card",
+          style = paste("background-color:", color_delay, "; padding:15px; border-radius:8px; color:white;"),
+          div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
+          div(class = "kpi-number", textOutput("kpi_delay")),
+          div(class = "kpi-name", "Mean Delay")
+        )
+      ),
+      style = "background: none; border: none; padding: 0; width: auto; text-align: left; display: flex;"
+    )
+  })
+  
   ## -------------------------------------------------
   ## 4) Zusätzliche Info 
   ## -------------------------------------------------
@@ -173,129 +291,89 @@ shinyServer(function(input, output, session) {
   }
   
   ## Durchschnittswerte einmalig aus kpi_vals()
-  avg_ifr <- reactive(kpi_vals()$ifr_avg)            # kommt aus get_ifr_details
-  avg_otd <- reactive(mean(kpi_vals()$otdr * 100, na.rm = TRUE))  # Beispiel
-  
-  selected_kpi  <- reactiveVal(NULL)
-  selected_rule <- reactiveVal(NULL)
-  plot_state <- reactiveVal("box")  # can be "box" or "time"
+
+  selected_kpi  = reactiveVal(NULL)
+  selected_rule = reactiveVal(NULL)
   
   observeEvent(input$kpi_ifr, {
-    value <- kpi_vals()$ifr_value
-    avg   <- avg_ifr()
-    
-    if (is.numeric(value) && is.numeric(avg)) {
-      info <- get_color_info(value, avg)
-    } else {
-      info <- list(color = kpi_colors$grey, desc = "value or average is not available")
-    }
-    
     selected_kpi("Item Fill Rate")
-    selected_rule(info$desc)
-    session$sendCustomMessage("update-bar-color", info$color)
   })
   
+  observeEvent(input$kpi_rr, {
+    selected_kpi("Return Rate")
+  })
   
-  observeEvent(input$kpi_time, {   # Button-ID 'kpi_time' muss in ui.R existieren
-    value <- kpi_vals()$otdr * 100
-    info  <- get_color_info(value, avg_otd())
+  observeEvent(input$kpi_time, {  
     selected_kpi ("On-Time Delivery")
-    selected_rule(info$desc)
-    session$sendCustomMessage("update-bar-color", info$color)
   })
   
   output$kpi_info <- renderUI({
-    kpi  <- selected_kpi()
-    desc <- selected_rule()
+    kpi <- selected_kpi()
     if (is.null(kpi)) {
-      kpi  <- "Please select the field you are interested in"
-      desc <- ""
+      kpi <- "Please select the field you are interested in"
     }
-
+    
     div(
-      style = "display:flex; width:100%;",
-      div(style = "flex:1;"),
-      div(kpi,  style = "flex:1; text-align:center;"),
-      div(desc, style = "flex:1; text-align:right; font-size:0.9em; font-style:italic;")
+      style = "width: 100%; text-align: center; font-size: 20px; font-weight: bold;",
+      kpi
     )
   })
   
-  plot_state <- reactiveVal("box")  # can be "box" or "time"
   
-  # Button toggles plot type and label
-  observeEvent(input$toggle_plot, {
-    new_state <- if (plot_state() == "box") "time" else "box"
-    plot_state(new_state)
-    
-    updateActionButton(session, "toggle_plot",
-                       label = if (new_state == "box") "Timeline" else "Variation")
-  })
-  
-  # Dynamic plot output depending on selected KPI and state
-  output$kpi_plot <- renderUI({
-    kpi <- selected_kpi()
-    if (is.null(kpi)) return(NULL)
-    
-    plot_id <- if (kpi == "Item Fill Rate") {
-      if (plot_state() == "box") "ifr_boxplot" else "ifr_timeline"
-    } else {
-      if (plot_state() == "box") "otd_boxplot" else "otd_timeline"
-    }
-    
-    plotOutput(plot_id)
-  })
-  
-  
+  # Render both plots side by side
   output$kpi_dynamic_ui <- renderUI({
     kpi <- selected_kpi()
     if (is.null(kpi)) return(NULL)
     
-    # Left content
-    left_col <- switch(kpi,
-                       "Item Fill Rate" = column(6,
-                                                 div(style = "font-size: 20px; padding: 7px 0;",
-                                                     "Item Fill Rate of the Product on average: ",
-                                                     sprintf("%.1f %%", kpi_vals()$ifr_value)),
-                                                 div(style = "font-size: 20px; padding: 7px 0;",
-                                                     "Item Fill Rate of the Company on average: ",
-                                                     sprintf("%.1f %%", kpi_vals()$ifr_avg)),
-                                                 div(style = "font-size: 20px; padding: 7px 0;",
-                                                     "Worst Item Fill Rate of the Product: ",
-                                                     sprintf("%.1f %%", kpi_vals()$ifr_worst)),
-                                                 div(style = "font-size: 20px; padding: 7px 0;",
-                                                     "Best Item Fill Rate of the Product: ",
-                                                     sprintf("%.1f %%", kpi_vals()$ifr_best))
-                       ),
-                       "On-Time Delivery" = column(6,
-                                                   div(style = "font-size: 20px; padding: 5px 0;",
-                                                       "On Time Delivery Rate of the Product on average: ",
-                                                       sprintf("%.1f %%", kpi_vals()$otdr * 100)),
-                                                   div(style = "font-size: 20px; padding: 5px 0;",
-                                                       "On Time Delivery Rate of the Company on average: ",
-                                                       sprintf("%.1f %%", kpi_vals()$otd_company * 100)),
-                                                   div(style = "font-size: 20px; padding: 5px 0;",
-                                                       "Mean Delay of the Product on average: ",
-                                                       sprintf("%.1f d", kpi_vals()$delay)),
-                                                   div(style = "font-size: 20px; padding: 5px 0;",
-                                                       "Mean Delay Delivery Rate of the Company on average: ",
-                                                       sprintf("%.1f d", kpi_vals()$delay_company)),
-                                                   div(style = "font-size: 20px; padding: 5px 0;",
-                                                       "Worst Delay of the Product: ",
-                                                       sprintf("%.1f d", kpi_vals()$worst_delay))
-                       ),
-                       column(6, div("Unknown KPI"))
-    )
+    # Determine which plots to show
+    if (kpi == "Item Fill Rate") {
+      left_plot  <- plotOutput("ifr_boxplot")
+      right_plot <- plotOutput("ifr_timeline")
+    } else if (kpi == "On-Time Delivery") {
+      left_plot  <- plotOutput("otd_boxplot")
+      right_plot <- plotOutput("otd_timeline")
+    } else if (kpi == "Return Rate") {
+      left_plot  <- plotOutput("otd_boxplot") #Change
+      right_plot <- plotOutput("otd_timeline") #Change
+    }else {
+      return(div("Unknown KPI"))
+    }
     
-    # Right content
-    right_col <- column(6,
-                        uiOutput("kpi_plot"),
-                        br(),
-                        actionButton("toggle_plot", "Timeline")
+    fluidRow(
+      column(6, left_plot),
+      column(6, right_plot)
     )
-    
-    fluidRow(left_col, right_col)
   })
   
-  
+  #Render Handlungsempfehlung
+  output$kpi_result <- renderUI({
+    kpi <- selected_kpi()
+    vals <- kpi_vals()
+    
+    if (is.null(kpi) || is.null(vals)) return(NULL)
+    
+    proposal <- ""
+    
+    if (kpi == "Item Fill Rate" && !is.null(vals$ifr_value)) {
+      x <- round(100 - vals$ifr_value, 1)
+      proposal <- paste("Suggestion: Order", x, "% more units.")
+    } else if (kpi == "On-Time Delivery" && !is.null(vals$delay)) {
+      x <- round(vals$delay, 1)
+      proposal <- paste("Suggestion: Order", x, "days earlier.")
+    } else {
+      return(NULL)  # No known KPI or data
+    }
+    
+    div(
+      id = "info-container",
+      class = "info-box",
+      style = paste(
+        "margin-top: 20px; padding: 15px;",
+        "border-radius: 8px; background-color: royalblue;",
+        "color: white; text-align: center; font-size: 20px; font-weight: bold;"
+      ),
+      proposal
+    )
+  })
   
 })
