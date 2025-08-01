@@ -3,7 +3,7 @@ calculate_mean_delay <- function(material_id,
                                  EKET,
                                  EKES,
                                  po_filter = NULL,
-                                 positive_only = FALSE) {
+                                 positive_only = TRUE) {
   # Try-catch to ensure numeric output
   tryCatch({
     # 0) Zeilen für das gewünschte Material (+ optionaler PO-Filter)

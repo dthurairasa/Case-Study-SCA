@@ -27,8 +27,8 @@ boxplot_delay <- function(material_id,
     geom_boxplot(fill = "grey85", width = .25, outlier.shape = NA) +
     geom_jitter(width = .1, colour = "steelblue", size = 2, alpha = .7) +
     labs(
-      title = paste("Verspätungsverteilung – Material", material_id),
-      y     = "Verspätung in Tagen",
+      title = paste("Delay Distribution – Material", material_id),
+      y     = "Delay in days",
       x     = NULL
     ) +
     theme_minimal() +

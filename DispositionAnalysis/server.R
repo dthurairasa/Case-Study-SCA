@@ -86,6 +86,13 @@ shinyServer(function(input, output, session) {
       min_up_pct  = 5
     )
     
+    rr_det <- get_rr_details(
+      material_id = input$material,
+      master_df   = orders,
+      top_n       = if (isTRUE(input$use_all)) NULL else 25,
+      po_filter   = po_keys
+    )
+    
     list(
       ifr_value = ifr_det$item_ifr,
       ifr_flag  = ifr_det$flag,
@@ -95,6 +102,11 @@ shinyServer(function(input, output, session) {
       ifr_avg   = ifr_det$avg_ifr_all,
       ifr_best  = max(ifr_det$boxplot_vec, na.rm = TRUE),
       ifr_worst = min(ifr_det$boxplot_vec, na.rm = TRUE),
+      
+      rr_value = rr_det$rr,
+      rr_box   = rr_det$boxplot_vec,
+      rr_time  = rr_det$timeline_tbl,
+      rr_avg   = avg_rr,
       
       otdr  = calculate_otdr(input$material, EKET, EKES, EKPO, po_filter = po_keys),
       oct   = calculate_poct(input$material, EKPO, EKKO, EKBE, po_filter = po_keys),
@@ -109,6 +121,7 @@ shinyServer(function(input, output, session) {
   
   ## KPI-Cards (Text-Outputs für ui.R)
   output$kpi_ifr <- renderText(sprintf("%.1f %%", kpi_vals()$ifr_value))
+  output$kpi_rr  <- renderText(sprintf("%.1f %%", kpi_vals()$rr_value))
   output$kpi_otdr  <- renderText( sprintf("%.1f %%", kpi_vals()$otdr * 100) )
   output$kpi_oct  <- renderText( sprintf("%.1f d",  kpi_vals()$oct) )
   output$kpi_delay  <- renderText( sprintf("%.1f d",  kpi_vals()$delay) )
@@ -122,7 +135,7 @@ shinyServer(function(input, output, session) {
   
   output$ifr_boxplot <- renderPlot({
     boxplot(kpi_vals()$ifr_box,
-            main = "IFR-Verteilung (letzte Bestellungen)",
+            main = "IFR Distribution (recent orders)",
             ylab = "IFR %")
   })
   
@@ -130,11 +143,17 @@ shinyServer(function(input, output, session) {
     kpi_vals()$delay_box
   })
   
+  output$rr_boxplot <- renderPlot({
+    boxplot(kpi_vals()$rr_box,
+            main = "Return Rate Distribution (recent orders)",
+            ylab = "Return Rate %")
+  })
+  
   output$ifr_timeline <- renderPlot({
     df <- kpi_vals()$ifr_time
     ggplot(df, aes(x = Lieferdatum, y = ifr_line)) +
       geom_line() + geom_point() +
-      labs(title = "IFR-Zeitreihe", y = "IFR %", x = "Lieferdatum") +
+      labs(title = "IFR-Timeline", y = "IFR %", x = "Delivery Date") +
       theme_minimal()
   })
   
@@ -143,7 +162,15 @@ shinyServer(function(input, output, session) {
     if (is.null(df)) return(NULL)
     ggplot(df, aes(x = Lieferdatum, y = delay_days)) +
       geom_line() + geom_point() +
-      labs(title = "Delay Timeline", y = "Delay (days)", x = "Lieferdatum") +
+      labs(title = "Delay Timeline", y = "Delay (days)", x = "Delivery Date") +
+      theme_minimal()
+  })
+  
+  output$rr_timeline <- renderPlot({
+    df <- kpi_vals()$rr_time
+    ggplot(df, aes(x = Lieferdatum, y = rr_line)) +
+      geom_line() + geom_point() +
+      labs(title = "Return Rate Timeline", y = "Return Rate %", x = "Delivery Date") +
       theme_minimal()
   })
   
@@ -212,9 +239,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$kpi_rr_button <- renderUI({
-    
-    kpi_value_rr <- kpi_vals()$ifr_value #Change
-    bg_color_rr <- get_bg_color_ifr(kpi_value_rr)
+    kpi_value_rr <- kpi_vals()$rr_value
+    bg_color_rr <- get_bg_color_rr(kpi_value_rr)
     
     actionButton(
       inputId = "kpi_rr",
@@ -222,7 +248,7 @@ shinyServer(function(input, output, session) {
         class = "kpi-card",
         style = paste("background-color:", bg_color_rr, "; padding:15px; border-radius:8px; color:white;"),
         div(class = "kpi-logo", img(src = "RR.png", height = 60)),
-        div(class = "kpi-number", "2%" ), #Change
+        div(class = "kpi-number", textOutput("kpi_rr")),
         div(class = "kpi-name", "Return Rate")
       ),
       style = "background: none; border: none; padding: 0; width: auto; text-align: left;"
@@ -333,8 +359,8 @@ shinyServer(function(input, output, session) {
       left_plot  <- plotOutput("otd_boxplot")
       right_plot <- plotOutput("otd_timeline")
     } else if (kpi == "Return Rate") {
-      left_plot  <- plotOutput("otd_boxplot") #Change
-      right_plot <- plotOutput("otd_timeline") #Change
+      left_plot  <- plotOutput("rr_boxplot")
+      right_plot <- plotOutput("rr_timeline")
     }else {
       return(div("Unknown KPI"))
     }
