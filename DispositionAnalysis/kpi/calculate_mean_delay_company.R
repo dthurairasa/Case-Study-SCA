@@ -3,7 +3,7 @@ calculate_mean_delay_company <- function(master_df,
                                          EKET,
                                          EKES,
                                          po_filter = NULL,
-                                         positive_only = FALSE) {
+                                         positive_only = TRUE) {
   rows <- if (is.null(po_filter)) master_df
   else semi_join(master_df, po_filter, by = c("EBELN", "EBELP"))
   if (nrow(rows) == 0)

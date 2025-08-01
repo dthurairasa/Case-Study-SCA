@@ -180,6 +180,15 @@ avg_ifr <- with(orders, {
   }
 })
 
+avg_rr <- with(orders, {
+  if (sum(goods_receipt_qty, na.rm = TRUE) > 0) {
+    sum(pmin(return_qty, goods_receipt_qty), na.rm = TRUE) /
+      sum(goods_receipt_qty, na.rm = TRUE) * 100
+  } else {
+    NA_real_
+  }
+})
+
 avg_otd <- {
   ekes_df <- EKES %>% rename(ETENR = ETENS)
   merged <- EKET %>%
