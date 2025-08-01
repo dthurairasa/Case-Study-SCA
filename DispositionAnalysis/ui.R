@@ -4,13 +4,11 @@ library(shinydashboard)
 library(shinythemes)
 library(colourpicker)
 
-
 shinyUI(fluidPage(
   #  titlePanel("Prozessanalyse"),
   
   theme = shinytheme("flatly"),
   
-      
   tags$head(
     tags$style(HTML("
       .top-bar {
@@ -22,9 +20,6 @@ shinyUI(fluidPage(
         border-bottom: 1px solid #ddd;
       }
       .info-box {
-        display: flex;
-        justify-content: space-between; /* spreads items evenly */
-        width: 90%;
         font-weight: bold;
         font-size: 16px;
       }
@@ -67,46 +62,61 @@ shinyUI(fluidPage(
         flex-wrap: wrap;
         margin-top: 20px;
       }
-    "))
+    ")),
+    tags$script(HTML("Shiny.addCustomMessageHandler('update-bar-color', function(col) { var el = document.getElementById('info-container'); if(el){ el.style.backgroundColor = col; } });"))
   ),
   
   # Top Bar
   div(
-    style = "display: flex; justify-content: space-between; align-items: center;",
-    # Left side: Material and Data
+    style = "padding-top: 20px;",
     div(
-      style = "display: flex; gap: 100px; align-items: center;",
-      selectInput("material", "Material:", choices = NULL, width = "180px"),
-      span(HTML("Data Used:<br>from 01.01.2023 to 31.05.2025</b>")),
-      span(HTML("Datasets Used:<br>*Number*</b>"))
-    ),
-    # Right side: Close button
-    actionButton("close_app", "Close", class = "close-button")
+      style = "display: flex; justify-content: space-between; align-items: center;",
+      div(
+        style = "display: flex; gap: 100px; align-items: center;",
+        selectInput("material", "Material:", choices = NULL, width = "180px"),
+        span(
+          HTML("Data Used:<br>"),
+          textOutput("data_range", inline = TRUE)
+        ),
+        span(
+          HTML("Datasets Used:<br>"),
+          textOutput("data_count", inline = TRUE)
+        ),
+        uiOutput("all_data_checkbox")
+      ),
+      actionButton("close_app", "Close", class = "close-button")
+    )
   ),
+  
+  tags$hr(style = "margin: 0; border-top: 1px solid #ddd;"),
   
   # KPI Cards Display (static placeholders for now)
   div(class = "kpi-container",
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "IFR.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_ifr")),
-          div(class = "kpi-name",   "Item Fill Rate")
-      ),
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "OTD.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_otdr")),
-          div(class = "kpi-name",   "On-Time Delivery Rate")
-      ),
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "OCT.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_poct")),
-          div(class = "kpi-name",   "Order Cycle Time")
-      ),
-      div(class = "kpi-card",
-          div(class = "kpi-logo", img(src = "LTD.png", height = 60)),
-          div(class = "kpi-number", textOutput("kpi_lead")),
-          div(class = "kpi-name",   "Lead Time")
-      )
+      style = "margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; display: flex; gap: 10px;",
+      
+      # Single button for IFR
+      uiOutput("kpi_ifr_button"),
+      
+      uiOutput("kpi_rr_button"),
+      
+      div(style = "width: 1px; background-color: #ddd; height: auto;"),
+      
+      # One button wrapping the last three KPIs
+      uiOutput("kpi_time_button")
   ),
+  
+  div(id = "info-container",
+      class = "info-box",
+      style = paste(
+        "margin-top: 20px; padding: 15px; border: 1px solid #ddd;",
+        "border-radius: 8px; background-color: #cccccc;"
+      ),
+      uiOutput("kpi_info")
+  ), 
+  uiOutput("kpi_dynamic_ui"), 
+  
+  uiOutput("kpi_result")
+  
   
 ))
 

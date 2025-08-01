@@ -1,0 +1,76 @@
+---
+title: "alle funktionen"
+output: html_document
+date: "2025-07-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# 1a) Funktion zur Berechnung des Mean Delay (Durchschnittliche Verspätung pro Schedule‑Line)
+# ------------------------------------------------------------------------------------------------
+#  Definition: Delay = EKES.EINDT (bestätigter Termin) − EKET.EINDT (geplanter Termin).
+#  Option 'positive_only': wenn TRUE, werden nur verspätete (Delay > 0) Lines gemittelt.
+calculate_mean_delay <- function(
+  material_id,
+  file_eket = "EKET.csv",
+  file_ekes = "EKES.csv",
+  file_ekpo = "EKPO.csv",
+  positive_only = FALSE  # TRUE: nur positive (verspätete) Delays berücksichtigen
+) {
+  library(dplyr)
+  eket <- read.csv2(file_eket, dec=",", sep=";", stringsAsFactors=FALSE)
+  ekes <- read.csv2(file_ekes, dec=",", sep=";", stringsAsFactors=FALSE)
+  ekpo <- read.csv2(file_ekpo, dec=",", sep=";", stringsAsFactors=FALSE)
+
+  # MATNR an EKET koppeln und nach Material filtern
+  eket_mat <- eket %>%
+    inner_join(ekpo %>% select(EBELN, EBELP, MATNR), by = c("EBELN","EBELP")) %>%
+    filter(MATNR == as.character(material_id))
+  if(nrow(eket_mat) == 0) stop("Keine Schedule-Lines für Material ", material_id)
+
+  # EKES joinen → Delay berechnen
+  delay_df <- eket_mat %>%
+    inner_join(
+      ekes %>% select(EBELN, EBELP, ETENS, EINDT) %>% rename(ETENR = ETENS),
+      by = c("EBELN","EBELP","ETENR")
+    ) %>%
+    mutate(
+      plannedDate   = as.Date(EINDT.x, "%d.%m.%Y"),
+      confirmedDate = as.Date(EINDT.y, "%d.%m.%Y"),
+      delay_days    = as.numeric(confirmedDate - plannedDate)
+    )
+
+  if (positive_only) delay_df <- delay_df %>% filter(delay_days > 0)
+  if (nrow(delay_df) == 0) stop("Keine gültigen Delay-Daten für Material ", material_id)
+
+  mean_delay <- mean(delay_df$delay_days, na.rm = TRUE)
+  message(sprintf("Mean Delay für Material %s: %.1f Tage", material_id, mean_delay))
+  return(mean_delay)
+}
+
+# 3) Beispiel-Aufrufe
+# ──────────────────────────────────────────────────────────────
+# a) alle Lieferlinien (positive & negative Delays)
+mean_delay_all <- calculate_mean_delay(
+  material_id   = "310586",
+  file_eket     = "EKET.csv",
+  file_ekes     = "EKES.csv",
+  file_ekpo     = "EKPO.csv",
+  positive_only = FALSE
+)
+
+# b) nur echte Verspätungen (Delay > 0)
+mean_delay_pos <- calculate_mean_delay(
+  material_id   = "310586",
+  positive_only = TRUE   # übrige Argumente benutzen Default-Dateinamen
+)
+
+# 4) Ergebnis anzeigen
+cat("Mean Delay (alle):",  mean_delay_all, "Tage\n")
+cat("Mean Delay (nur verspätet):", mean_delay_pos, "Tage\n")
+
+```
+

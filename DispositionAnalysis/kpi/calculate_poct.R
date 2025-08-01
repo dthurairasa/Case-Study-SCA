@@ -10,11 +10,13 @@ calculate_poct <- function(
     EKPO,
     EKKO,
     EKBE,
-    goods_indicator = "1"  # Code für Wareneingang in EKBE$VGABE
+    goods_indicator = "1",  # Code für Wareneingang in EKBE$VGABE
+    po_filter = NULL
 ) {
   
   ebelns <- EKPO %>%
     filter(MATNR == as.character(material_id)) %>%
+    { if (!is.null(po_filter)) semi_join(., po_filter, by = c("EBELN", "EBELP")) else . } %>%
     pull(EBELN) %>% unique()
   if(length(ebelns)==0) stop("Keine Bestellungen für Material ", material_id)
   
