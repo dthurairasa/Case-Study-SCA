@@ -1,4 +1,9 @@
-timeline_delay <- function(material_id, master_df, EKET, EKES, po_filter = NULL) {
+timeline_delay <- function(material_id,
+                           master_df,
+                           EKET,
+                           EKES,
+                           po_filter = NULL,
+                           positive_only = TRUE) {
   rows <- master_df %>% filter(MATNR == as.character(material_id))
   if (!is.null(po_filter)) {
     rows <- semi_join(rows, po_filter, by = c("EBELN", "EBELP"))
@@ -15,6 +20,10 @@ timeline_delay <- function(material_id, master_df, EKET, EKES, po_filter = NULL)
                                      as.Date(EINDT.x, "%d.%m.%Y"))) %>%
     left_join(po_keys, by = c("EBELN", "EBELP")) %>%
     select(Lieferdatum, delay_days)
+  
+  if (positive_only) {
+    merged <- filter(merged, delay_days > 0)
+  }
   
   merged
 }
