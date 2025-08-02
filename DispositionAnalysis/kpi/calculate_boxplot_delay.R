@@ -3,7 +3,8 @@ boxplot_delay <- function(material_id,
                           master_df,          # = orders
                           EKET,
                           EKES,
-                          po_filter = NULL) { # optional EBELN/EBELP‑Subset
+                          po_filter = NULL,   # optional EBELN/EBELP‑Subset
+                          positive_only = TRUE) {
   
   # 0) Zeilen für das Material holen (+ optionaler PO‑Filter)
   rows <- master_df %>% filter(MATNR == as.character(material_id))
@@ -21,6 +22,10 @@ boxplot_delay <- function(material_id,
                by = c("EBELN", "EBELP", "ETENR")) %>%
     mutate(delay_days = as.numeric(
       as.Date(EINDT.y, "%d.%m.%Y") - as.Date(EINDT.x, "%d.%m.%Y")))
+  
+  if (positive_only) {
+    rows <- filter(rows, delay_days > 0)
+  }
   
   # 2) Box‑&‑Whisker‑Plot zurückgeben
   ggplot(rows, aes(x = "", y = delay_days)) +
